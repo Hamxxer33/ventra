@@ -1,7 +1,9 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useState } from "react";
+import { TelegramLogo, XLogo } from "@/components/pixel-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TELEGRAM_URL, X_URL } from "@/lib/drop";
 import { submitWhitelistToGoogleForm } from "@/lib/gform";
 import {
   assignTicket,
@@ -12,6 +14,51 @@ import {
   shortWallet,
   type Profile,
 } from "@/lib/ticket";
+import { cn } from "@/lib/utils";
+
+const FOLLOWED_KEY = "ventra.followedX";
+const JOINED_KEY = "ventra.joinedTg";
+
+function readFlag(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeFlag(key: string): void {
+  try {
+    window.localStorage.setItem(key, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+function TaskButton({
+  href,
+  done,
+  onOpen,
+  icon,
+  idle,
+  complete,
+}: {
+  href: string;
+  done: boolean;
+  onOpen: () => void;
+  icon: ReactNode;
+  idle: string;
+  complete: string;
+}) {
+  return (
+    <Button asChild variant={done ? "primary" : "secondary"} className="w-full justify-start sm:w-auto">
+      <a href={href} target="_blank" rel="noreferrer" onClick={onOpen}>
+        {icon}
+        {done ? complete : idle}
+      </a>
+    </Button>
+  );
+}
 
 export function WhitelistForm({
   profile,
@@ -22,8 +69,17 @@ export function WhitelistForm({
 }) {
   const [handle, setHandle] = useState(profile?.handle ?? "");
   const [wallet, setWallet] = useState(profile?.wallet ?? "");
+  const [followed, setFollowed] = useState(false);
+  const [joined, setJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setFollowed(readFlag(FOLLOWED_KEY));
+    setJoined(readFlag(JOINED_KEY));
+  }, []);
+
+  const tasksDone = followed && joined;
 
   if (profile) {
     return (
@@ -42,8 +98,22 @@ export function WhitelistForm({
     );
   }
 
+  function markFollowed() {
+    writeFlag(FOLLOWED_KEY);
+    setFollowed(true);
+  }
+
+  function markJoined() {
+    writeFlag(JOINED_KEY);
+    setJoined(true);
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!followed || !joined) {
+      setError("Follow @Ventranxyz and join Telegram first.");
+      return;
+    }
     const h = normalizeHandle(handle);
     const w = normalizeWallet(wallet);
     if (!isValidHandle(h)) {
@@ -68,6 +138,32 @@ export function WhitelistForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3">
+        <p className="font-display text-pixel text-muted">Do this first</p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <TaskButton
+            href={X_URL}
+            done={followed}
+            onOpen={markFollowed}
+            icon={<XLogo />}
+            idle="Follow @Ventranxyz"
+            complete="Followed @Ventranxyz"
+          />
+          <TaskButton
+            href={TELEGRAM_URL}
+            done={joined}
+            onOpen={markJoined}
+            icon={<TelegramLogo />}
+            idle="Join Telegram"
+            complete="Joined Telegram"
+          />
+        </div>
+        <p className={cn("font-sans text-base", tasksDone ? "text-accent" : "text-muted")}>
+          {tasksDone
+            ? "Tasks done. Drop your handle and wallet."
+            : "Wallet stays locked until both are done."}
+        </p>
+      </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="x-handle">X handle</Label>
         <div className="flex items-stretch">
@@ -85,7 +181,7 @@ export function WhitelistForm({
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             className="border-l-0"
-            disabled={busy}
+            disabled={busy || !tasksDone}
           />
         </div>
       </div>
@@ -101,7 +197,7 @@ export function WhitelistForm({
           placeholder="0x…"
           value={wallet}
           onChange={(e) => setWallet(e.target.value)}
-          disabled={busy}
+          disabled={busy || !tasksDone}
         />
       </div>
       {error ? (
@@ -109,7 +205,7 @@ export function WhitelistForm({
           {error}
         </p>
       ) : null}
-      <Button type="submit" className="w-full sm:w-auto" disabled={busy}>
+      <Button type="submit" className="w-full sm:w-auto" disabled={busy || !tasksDone}>
         {busy ? "Sending" : "Get ticket"}
       </Button>
     </form>

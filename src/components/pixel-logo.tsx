@@ -38,3 +38,11 @@ export function OpenSeaLogo({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function TelegramLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={cn("size-4", className)} fill="currentColor" aria-hidden="true">
+      <path d="M21.7 4.3 2.9 11.6c-1.3.5-1.3 1.3-.2 1.6l4.8 1.5 1.8 5.6c.2.7.1 1 .8 1 .5 0 .7-.2 1-.6l2.7-3.6 5.6 4.1c1 .6 1.8.3 2-.9l3.7-17.3c.4-1.5-.5-2.2-1.6-1.7Z" />
+    </svg>
+  );
+}
