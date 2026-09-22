@@ -4,6 +4,7 @@ export type Profile = {
   wallet: string;
   faceId: string | null;
   createdAt: number;
+  ledger?: "global";
 };
 
 const PROFILE_KEY = "ventra.profile";
@@ -44,6 +45,7 @@ export function assignTicket(handle: string, wallet: string, ticket: string): Pr
     wallet,
     faceId: existing?.faceId ?? null,
     createdAt: existing?.createdAt ?? Date.now(),
+    ledger: "global",
   };
   saveProfile(profile);
   return profile;

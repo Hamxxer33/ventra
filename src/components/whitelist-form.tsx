@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { TELEGRAM_URL, X_POST_URL, X_URL } from "@/lib/drop";
 import { submitWhitelistToGoogleForm } from "@/lib/gform";
 import { claimTicket } from "@/lib/ticket-claim";
+import { issueTicket } from "@/lib/ticket-ledger";
 import {
   assignTicket,
   isValidHandle,
@@ -169,18 +170,9 @@ export function WhitelistForm({
     setError(null);
     setBusy(true);
     try {
-      const claimed = await claimTicket({ data: { handle: h } });
-      try {
-        await submitWhitelistToGoogleForm(w, h);
-      } catch {
-        /* ticket is already issued; wallet sheet can retry on a later submit */
-      }
+      const claimed = await issueTicket(h, () => claimTicket({ data: { handle: h } }));
+      void submitWhitelistToGoogleForm(w, h);
       onAssigned(assignTicket(h, w, claimed.ticket));
-    } catch (err) {
-      const message = err instanceof Error && err.message === "Whitelist is full"
-        ? "Whitelist is full."
-        : "Could not assign a ticket. Try again.";
-      setError(message);
     } finally {
       setBusy(false);
     }

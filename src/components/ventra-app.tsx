@@ -8,6 +8,7 @@ import { WhitelistForm } from "@/components/whitelist-form";
 import { useCountdown } from "@/hooks/use-countdown";
 import { SUPPLY_LABEL } from "@/lib/drop";
 import { claimTicket, getTicketCount } from "@/lib/ticket-claim";
+import { issueTicket, readIssuedCount } from "@/lib/ticket-ledger";
 import { loadProfile, saveProfile, setProfileFace, type Profile } from "@/lib/ticket";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +64,16 @@ export function VentraApp() {
   useEffect(() => {
     let cancelled = false;
 
+    async function fetchIssued(): Promise<number> {
+      try {
+        const count = await getTicketCount();
+        if (typeof count.issued === "number") return count.issued;
+      } catch {
+        /* no Postgres on the live host */
+      }
+      return readIssuedCount();
+    }
+
     async function boot() {
       const local = loadProfile();
       if (!cancelled) {
@@ -70,30 +81,28 @@ export function VentraApp() {
         setReady(true);
       }
       try {
-        const count = await getTicketCount();
-        if (!cancelled) setIssued(count.issued);
+        const count = await fetchIssued();
+        if (!cancelled) setIssued(count);
       } catch {
         /* count is decorative */
       }
-      if (!local) return;
-      try {
-        const claimed = await claimTicket({ data: { handle: local.handle } });
-        const next = { ...local, ticket: claimed.ticket };
-        saveProfile(next);
-        if (!cancelled) {
-          setProfile(next);
-          setIssued(claimed.issued);
-        }
-      } catch {
-        /* keep the locally saved ticket if the ledger is unreachable */
+      if (!local || local.ledger === "global") return;
+      const claimed = await issueTicket(local.handle, () =>
+        claimTicket({ data: { handle: local.handle } }),
+      );
+      const next = { ...local, ticket: claimed.ticket, ledger: "global" as const };
+      saveProfile(next);
+      if (!cancelled) {
+        setProfile(next);
+        setIssued(claimed.issued);
       }
     }
 
     void boot();
     const timer = window.setInterval(() => {
-      getTicketCount()
+      fetchIssued()
         .then((count) => {
-          if (!cancelled) setIssued(count.issued);
+          if (!cancelled) setIssued(count);
         })
         .catch(() => {
           /* ignore */
@@ -119,8 +128,8 @@ export function VentraApp() {
 
   function onAssigned(next: Profile) {
     setProfile(next);
-    getTicketCount()
-      .then((count) => setIssued(count.issued))
+    readIssuedCount()
+      .then((count) => setIssued(count))
       .catch(() => {
         /* ignore */
       });

@@ -15,7 +15,15 @@ function normalizeClaimHandle(raw: string): string {
   return handle.toLowerCase();
 }
 
+function hasDatabaseUrl(): boolean {
+  const raw = typeof process !== "undefined" ? process.env.DATABASE_URL : undefined;
+  return Boolean(raw && raw.trim());
+}
+
 export const getTicketCount = createServerFn({ method: "POST" }).handler(async () => {
+  if (!hasDatabaseUrl()) {
+    throw new Error("NO_DB");
+  }
   const { getSql } = await import("@/lib/db");
   const sql = await getSql();
   const rows = await sql<{ n: number }>`select count(*)::int as n from tickets`;
@@ -28,6 +36,9 @@ export const claimTicket = createServerFn({ method: "POST" })
     return { handle: normalizeClaimHandle(parsed.handle) };
   })
   .handler(async ({ data }) => {
+    if (!hasDatabaseUrl()) {
+      throw new Error("NO_DB");
+    }
     const { createHash } = await import("node:crypto");
     const { getSql } = await import("@/lib/db");
     const sql = await getSql();
