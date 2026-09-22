@@ -1,5 +1,7 @@
+import { WL_URL } from "@/lib/drop";
+
 export function tweetText(ticket: string): string {
-  return `I just got whitelisted for the Ventra 10,000 NFT mint on OpenSea — ticket #${ticket}. Drops Sept 25.`;
+  return `I just got whitelisted for the Ventra 10,000 NFT mint on OpenSea — ticket #${ticket}. Drops Sept 25. ${WL_URL}`;
 }
 
 export function tweetIntentUrl(ticket: string): string {

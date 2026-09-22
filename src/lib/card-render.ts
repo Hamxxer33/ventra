@@ -1,4 +1,5 @@
 import { type Countdown, pad2 } from "./countdown";
+import { WL_HOST } from "./drop";
 import { drawPixelText } from "./pixel-font";
 
 export const CARD_W = 1080;
@@ -138,7 +139,7 @@ export function renderCard(ctx: CanvasRenderingContext2D, state: CardRenderState
   const handle = `@${state.handle}`.slice(0, 16);
   const footY = h - Math.round(78 * s);
   drawPixelText(ctx, handle, pad, footY, Math.max(2, Math.round(3 * s)), C.fg, "left");
-  drawPixelText(ctx, "OPENSEA", w - pad, footY, Math.max(2, Math.round(3 * s)), C.accent, "right");
+  drawPixelText(ctx, WL_HOST, w - pad, footY, Math.max(2, Math.round(3 * s)), C.accent, "right");
 
   // Scanlines — baked into the export so the PNG matches the page.
   ctx.fillStyle = "rgba(0,0,0,0.18)";
