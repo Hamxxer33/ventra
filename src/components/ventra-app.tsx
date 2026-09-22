@@ -7,7 +7,8 @@ import { PixelLogo } from "@/components/pixel-logo";
 import { WhitelistForm } from "@/components/whitelist-form";
 import { useCountdown } from "@/hooks/use-countdown";
 import { SUPPLY_LABEL } from "@/lib/drop";
-import { loadProfile, setProfileFace, type Profile } from "@/lib/ticket";
+import { claimTicket, getTicketCount } from "@/lib/ticket-claim";
+import { loadProfile, saveProfile, setProfileFace, type Profile } from "@/lib/ticket";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
@@ -57,10 +58,51 @@ export function VentraApp() {
   const countdown = useCountdown();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [ready, setReady] = useState(false);
+  const [issued, setIssued] = useState<number | null>(null);
 
   useEffect(() => {
-    setProfile(loadProfile());
-    setReady(true);
+    let cancelled = false;
+
+    async function boot() {
+      const local = loadProfile();
+      if (!cancelled) {
+        setProfile(local);
+        setReady(true);
+      }
+      try {
+        const count = await getTicketCount();
+        if (!cancelled) setIssued(count.issued);
+      } catch {
+        /* count is decorative */
+      }
+      if (!local) return;
+      try {
+        const claimed = await claimTicket({ data: { handle: local.handle } });
+        const next = { ...local, ticket: claimed.ticket };
+        saveProfile(next);
+        if (!cancelled) {
+          setProfile(next);
+          setIssued(claimed.issued);
+        }
+      } catch {
+        /* keep the locally saved ticket if the ledger is unreachable */
+      }
+    }
+
+    void boot();
+    const timer = window.setInterval(() => {
+      getTicketCount()
+        .then((count) => {
+          if (!cancelled) setIssued(count.issued);
+        })
+        .catch(() => {
+          /* ignore */
+        });
+    }, 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, []);
 
   const current = stepIndex(profile);
@@ -77,6 +119,11 @@ export function VentraApp() {
 
   function onAssigned(next: Profile) {
     setProfile(next);
+    getTicketCount()
+      .then((count) => setIssued(count.issued))
+      .catch(() => {
+        /* ignore */
+      });
   }
 
   function onSelectFace(id: string) {
@@ -100,6 +147,10 @@ export function VentraApp() {
           </div>
           {profile ? (
             <p className="font-display text-micro text-fg sm:text-pixel">#{profile.ticket}</p>
+          ) : issued !== null ? (
+            <p className="font-display text-micro text-muted sm:text-pixel">
+              {issued.toLocaleString("en-US")} CLAIMED
+            </p>
           ) : (
             <p className="font-display text-micro text-muted sm:text-pixel">WL OPEN</p>
           )}
@@ -121,7 +172,10 @@ export function VentraApp() {
             label={countdown?.done ? "Mint on OpenSea" : "OpenSea mint"}
           />
           <p className="font-display text-micro uppercase leading-relaxed text-muted sm:text-pixel">
-            {SUPPLY_LABEL} supply · opensea drop · sept 25 2026 · 12:00 utc
+            {issued !== null
+              ? `${issued.toLocaleString("en-US")} / ${SUPPLY_LABEL} claimed`
+              : `${SUPPLY_LABEL} supply`}{" "}
+            · opensea drop · sept 25 2026 · 12:00 utc
           </p>
         </section>
 
@@ -151,7 +205,8 @@ export function VentraApp() {
           <SectionFrame n="01" id="apply" title="WHITELIST" active={current === 0}>
             <p className="mb-6 max-w-lg font-sans text-lg text-muted">
               Follow @Ventranxyz, turn on notifications, repost the drop post, join Telegram, then
-              drop your X handle and wallet. You get the next sequential ticket, starting at 00001.
+              drop your X handle and wallet. Tickets are global and sequential — one number per
+              handle, starting at 00001.
             </p>
             {ready ? (
               <WhitelistForm profile={profile} onAssigned={onAssigned} />
@@ -179,10 +234,11 @@ export function VentraApp() {
 
         <footer className="flex flex-col gap-3 border-t-2 border-border pt-6 pb-8">
           <p className="font-display text-micro leading-relaxed text-muted sm:text-pixel">
-            ventra@mainnet: ~/whitelist · supply {SUPPLY_LABEL} · mint on opensea 2026-09-25
+            ventra@mainnet: ~/whitelist · {issued !== null ? `${issued.toLocaleString("en-US")} claimed · ` : ""}
+            supply {SUPPLY_LABEL} · mint on opensea 2026-09-25
           </p>
           <p className="font-sans text-base text-muted">
-            A ticket is not a mint. Card image is generated in your browser. No backend.
+            A ticket is not a mint. Same X handle always returns the same number.
           </p>
         </footer>
       </div>

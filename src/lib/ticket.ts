@@ -7,7 +7,6 @@ export type Profile = {
 };
 
 const PROFILE_KEY = "ventra.profile";
-const NEXT_KEY = "ventra.nextTicket";
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -37,31 +36,15 @@ export function saveProfile(profile: Profile): void {
   window.localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
 }
 
-function nextTicketNumber(): number {
-  if (!canUseStorage()) return 1;
-  const raw = window.localStorage.getItem(NEXT_KEY);
-  const n = raw ? Number.parseInt(raw, 10) : 1;
-  return Number.isFinite(n) && n >= 1 ? n : 1;
-}
-
-export function assignTicket(handle: string, wallet: string): Profile {
+export function assignTicket(handle: string, wallet: string, ticket: string): Profile {
   const existing = loadProfile();
-  if (existing) {
-    const updated: Profile = { ...existing, handle, wallet };
-    saveProfile(updated);
-    return updated;
-  }
-  const n = nextTicketNumber();
   const profile: Profile = {
-    ticket: formatTicket(n),
+    ticket,
     handle,
     wallet,
-    faceId: null,
-    createdAt: Date.now(),
+    faceId: existing?.faceId ?? null,
+    createdAt: existing?.createdAt ?? Date.now(),
   };
-  if (canUseStorage()) {
-    window.localStorage.setItem(NEXT_KEY, String(n + 1));
-  }
   saveProfile(profile);
   return profile;
 }

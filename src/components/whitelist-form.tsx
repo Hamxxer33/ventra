@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TELEGRAM_URL, X_POST_URL, X_URL } from "@/lib/drop";
 import { submitWhitelistToGoogleForm } from "@/lib/gform";
+import { claimTicket } from "@/lib/ticket-claim";
 import {
   assignTicket,
   isValidHandle,
@@ -123,7 +124,7 @@ export function WhitelistForm({
           {shortWallet(profile.wallet)}
         </p>
         <p className="font-sans text-base text-muted">
-          Saved on this device. Pick a face to bake your card.
+          Global ticket. Same handle always gets the same number. Pick a face to bake your card.
         </p>
       </div>
     );
@@ -168,10 +169,18 @@ export function WhitelistForm({
     setError(null);
     setBusy(true);
     try {
-      await submitWhitelistToGoogleForm(w, h);
-      onAssigned(assignTicket(h, w));
-    } catch {
-      setError("Could not send your wallet. Try again.");
+      const claimed = await claimTicket({ data: { handle: h } });
+      try {
+        await submitWhitelistToGoogleForm(w, h);
+      } catch {
+        /* ticket is already issued; wallet sheet can retry on a later submit */
+      }
+      onAssigned(assignTicket(h, w, claimed.ticket));
+    } catch (err) {
+      const message = err instanceof Error && err.message === "Whitelist is full"
+        ? "Whitelist is full."
+        : "Could not assign a ticket. Try again.";
+      setError(message);
     } finally {
       setBusy(false);
     }
