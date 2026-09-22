@@ -150,8 +150,8 @@ export function VentraApp() {
         <div className="flex flex-col gap-8">
           <SectionFrame n="01" id="apply" title="WHITELIST" active={current === 0}>
             <p className="mb-6 max-w-lg font-sans text-lg text-muted">
-              Follow @Ventranxyz, join Telegram, then drop your X handle and wallet. You get the
-              next sequential ticket, starting at 00001.
+              Follow @Ventranxyz, turn on notifications, repost the drop post, join Telegram, then
+              drop your X handle and wallet. You get the next sequential ticket, starting at 00001.
             </p>
             {ready ? (
               <WhitelistForm profile={profile} onAssigned={onAssigned} />

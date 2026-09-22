@@ -1,4 +1,8 @@
 export const SUPPLY = 10_000;
 export const SUPPLY_LABEL = "10,000";
+export const X_HANDLE = "Ventranxyz";
 export const X_URL = "https://x.com/Ventranxyz";
 export const TELEGRAM_URL = "https://t.me/ventranxyz";
+export const X_POST_ID = "2102400434795397595";
+export const X_POST_URL = `https://x.com/${X_HANDLE}/status/${X_POST_ID}`;
+export const X_REPOST_URL = `https://x.com/intent/retweet?tweet_id=${X_POST_ID}`;

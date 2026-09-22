@@ -1,9 +1,9 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
-import { TelegramLogo, XLogo } from "@/components/pixel-logo";
+import { BellLogo, RepostLogo, TelegramLogo, XLogo } from "@/components/pixel-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TELEGRAM_URL, X_URL } from "@/lib/drop";
+import { TELEGRAM_URL, X_POST_URL, X_URL } from "@/lib/drop";
 import { submitWhitelistToGoogleForm } from "@/lib/gform";
 import {
   assignTicket,
@@ -17,6 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 
 const FOLLOWED_KEY = "ventra.followedX";
+const NOTIFY_KEY = "ventra.notifyX";
+const REPOST_KEY = "ventra.repostedX";
 const JOINED_KEY = "ventra.joinedTg";
 
 function readFlag(key: string): boolean {
@@ -35,28 +37,52 @@ function writeFlag(key: string): void {
   }
 }
 
-function TaskButton({
+function TaskRow({
+  n,
   href,
   done,
   onOpen,
   icon,
-  idle,
-  complete,
+  label,
+  doneLabel,
 }: {
+  n: string;
   href: string;
   done: boolean;
   onOpen: () => void;
   icon: ReactNode;
-  idle: string;
-  complete: string;
+  label: string;
+  doneLabel: string;
 }) {
   return (
-    <Button asChild variant={done ? "primary" : "secondary"} className="w-full justify-start sm:w-auto">
-      <a href={href} target="_blank" rel="noreferrer" onClick={onOpen}>
-        {icon}
-        {done ? complete : idle}
-      </a>
-    </Button>
+    <div
+      className={cn(
+        "flex min-h-14 items-center gap-3 border-2 px-3 py-2",
+        done ? "border-accent bg-accent-dim/40" : "border-border bg-surface-2",
+      )}
+    >
+      <span
+        className={cn(
+          "w-8 shrink-0 font-display text-micro",
+          done ? "text-accent" : "text-muted",
+        )}
+      >
+        {done ? "OK" : n}
+      </span>
+      <span className={cn("shrink-0", done ? "text-accent" : "text-fg")}>{icon}</span>
+      <p className={cn("min-w-0 flex-1 font-sans text-lg leading-tight", done ? "text-fg" : "text-muted")}>
+        {done ? doneLabel : label}
+      </p>
+      <Button
+        asChild
+        variant={done ? "primary" : "secondary"}
+        className={cn("shrink-0 px-3", done && "text-bg")}
+      >
+        <a href={href} target="_blank" rel="noreferrer" onClick={onOpen}>
+          {done ? "Done" : "Open"}
+        </a>
+      </Button>
+    </div>
   );
 }
 
@@ -70,16 +96,21 @@ export function WhitelistForm({
   const [handle, setHandle] = useState(profile?.handle ?? "");
   const [wallet, setWallet] = useState(profile?.wallet ?? "");
   const [followed, setFollowed] = useState(false);
+  const [notified, setNotified] = useState(false);
+  const [reposted, setReposted] = useState(false);
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     setFollowed(readFlag(FOLLOWED_KEY));
+    setNotified(readFlag(NOTIFY_KEY));
+    setReposted(readFlag(REPOST_KEY));
     setJoined(readFlag(JOINED_KEY));
   }, []);
 
-  const tasksDone = followed && joined;
+  const doneCount = [followed, notified, reposted, joined].filter(Boolean).length;
+  const tasksDone = doneCount === 4;
 
   if (profile) {
     return (
@@ -103,6 +134,16 @@ export function WhitelistForm({
     setFollowed(true);
   }
 
+  function markNotified() {
+    writeFlag(NOTIFY_KEY);
+    setNotified(true);
+  }
+
+  function markReposted() {
+    writeFlag(REPOST_KEY);
+    setReposted(true);
+  }
+
   function markJoined() {
     writeFlag(JOINED_KEY);
     setJoined(true);
@@ -110,8 +151,8 @@ export function WhitelistForm({
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!followed || !joined) {
-      setError("Follow @Ventranxyz and join Telegram first.");
+    if (!followed || !notified || !reposted || !joined) {
+      setError("Finish all four tasks first.");
       return;
     }
     const h = normalizeHandle(handle);
@@ -139,29 +180,54 @@ export function WhitelistForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <div className="flex flex-col gap-3">
-        <p className="font-display text-pixel text-muted">Do this first</p>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <TaskButton
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="font-display text-pixel text-muted">Do this first</p>
+          <p className={cn("font-display text-micro", tasksDone ? "text-accent" : "text-muted")}>
+            {doneCount}/4
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <TaskRow
+            n="01"
             href={X_URL}
             done={followed}
             onOpen={markFollowed}
             icon={<XLogo />}
-            idle="Follow @Ventranxyz"
-            complete="Followed @Ventranxyz"
+            label="Follow @Ventranxyz"
+            doneLabel="Followed @Ventranxyz"
           />
-          <TaskButton
+          <TaskRow
+            n="02"
+            href={X_URL}
+            done={notified}
+            onOpen={markNotified}
+            icon={<BellLogo />}
+            label="Turn on notifications"
+            doneLabel="Notifications on"
+          />
+          <TaskRow
+            n="03"
+            href={X_POST_URL}
+            done={reposted}
+            onOpen={markReposted}
+            icon={<RepostLogo />}
+            label="Repost the drop post"
+            doneLabel="Reposted the drop post"
+          />
+          <TaskRow
+            n="04"
             href={TELEGRAM_URL}
             done={joined}
             onOpen={markJoined}
             icon={<TelegramLogo />}
-            idle="Join Telegram"
-            complete="Joined Telegram"
+            label="Join Telegram"
+            doneLabel="Joined Telegram"
           />
         </div>
         <p className={cn("font-sans text-base", tasksDone ? "text-accent" : "text-muted")}>
           {tasksDone
             ? "Tasks done. Drop your handle and wallet."
-            : "Wallet stays locked until both are done."}
+            : "Wallet stays locked until all four are done."}
         </p>
       </div>
       <div className="flex flex-col gap-2">

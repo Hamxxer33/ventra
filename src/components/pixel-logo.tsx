@@ -46,3 +46,19 @@ export function TelegramLogo({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function BellLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={cn("size-4", className)} fill="currentColor" aria-hidden="true">
+      <path d="M12 3c-3.3 0-6 2.4-6 6v3.2L4 16h16l-2-3.8V9c0-3.6-2.7-6-6-6Zm0 18c1.7 0 3-1 3-2H9c0 1 1.3 2 3 2Z" />
+    </svg>
+  );
+}
+
+export function RepostLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={cn("size-4", className)} fill="currentColor" aria-hidden="true">
+      <path d="M7 7h8.2L13.6 5.4 15 4l4 4-4 4-1.4-1.4L15.2 9H7v4H5V9c0-1.1.9-2 2-2Zm10 10H8.8l1.6 1.6L9 20l-4-4 4-4 1.4 1.4L8.8 15H17v-4h2v4c0 1.1-.9 2-2 2Z" />
+    </svg>
+  );
+}
