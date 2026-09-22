@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { OpenSeaLogo, XLogo } from "@/components/pixel-logo";
+import { OpenSeaSoonButton } from "@/components/opensea-soon-button";
+import { XLogo } from "@/components/pixel-logo";
 import { CARD_H, CARD_W, canvasToPngBlob, renderCard, renderLockedCard } from "@/lib/card-render";
-import { OPENSEA_MINT_URL } from "@/lib/drop";
 import { type Countdown } from "@/lib/countdown";
 import { faceById } from "@/lib/faces";
 import { downloadBlob, shareCard } from "@/lib/share";
@@ -141,7 +141,7 @@ export function CardStage({
             <p className="font-display text-pixel text-accent">YOUR CARD</p>
             <p className="font-sans text-lg text-muted">
               Ticket #{profile?.ticket} is baked in. The countdown ticks live on the image.
-              Download the PNG, post it on X, then mint on OpenSea.
+              Download the PNG and post it on X. Mint opens on OpenSea once the collection is live.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button onClick={onDownload} disabled={!ready || busy} variant="secondary">
@@ -152,12 +152,11 @@ export function CardStage({
                 <XLogo />
                 Post on X
               </Button>
-              <Button asChild variant="secondary">
-                <a href={OPENSEA_MINT_URL} target="_blank" rel="noreferrer">
-                  <OpenSeaLogo />
-                  Mint on OpenSea
-                </a>
-              </Button>
+              <OpenSeaSoonButton
+                className="w-full sm:w-auto whitespace-nowrap"
+                variant="secondary"
+                label="Mint on OpenSea"
+              />
             </div>
             {status ? (
               <p className="font-sans text-base text-fg" role="status">

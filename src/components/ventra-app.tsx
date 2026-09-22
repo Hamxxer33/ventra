@@ -2,11 +2,11 @@ import { useEffect, useState, type ReactNode } from "react";
 import { CardStage } from "@/components/card-stage";
 import { CountdownClock } from "@/components/countdown-clock";
 import { FacePicker } from "@/components/face-picker";
-import { OpenSeaLogo, PixelLogo } from "@/components/pixel-logo";
+import { OpenSeaSoonButton } from "@/components/opensea-soon-button";
+import { PixelLogo } from "@/components/pixel-logo";
 import { WhitelistForm } from "@/components/whitelist-form";
-import { Button } from "@/components/ui/button";
 import { useCountdown } from "@/hooks/use-countdown";
-import { OPENSEA_MINT_URL, SUPPLY_LABEL } from "@/lib/drop";
+import { SUPPLY_LABEL } from "@/lib/drop";
 import { loadProfile, setProfileFace, type Profile } from "@/lib/ticket";
 import { cn } from "@/lib/utils";
 
@@ -116,12 +116,10 @@ export function VentraApp() {
             UTC. One per wallet.
           </p>
           <CountdownClock countdown={countdown} className="max-w-xl" />
-          <Button asChild className="w-fit whitespace-nowrap">
-            <a href={OPENSEA_MINT_URL} target="_blank" rel="noreferrer">
-              <OpenSeaLogo />
-              {countdown?.done ? "Mint on OpenSea" : "OpenSea mint"}
-            </a>
-          </Button>
+          <OpenSeaSoonButton
+            className="w-fit whitespace-nowrap"
+            label={countdown?.done ? "Mint on OpenSea" : "OpenSea mint"}
+          />
           <p className="font-display text-micro uppercase leading-relaxed text-muted sm:text-pixel">
             {SUPPLY_LABEL} supply · opensea drop · sept 25 2026 · 12:00 utc
           </p>
