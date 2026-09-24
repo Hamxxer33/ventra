@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 
 const FOLLOWED_KEY = "ventra.followedX";
 const NOTIFY_KEY = "ventra.notifyX";
-const REPOST_KEY = "ventra.repostedX";
+const REPOST_KEY = "ventra.repostedDrop2";
 const JOINED_KEY = "ventra.joinedTg";
 
 function readFlag(key: string): boolean {
