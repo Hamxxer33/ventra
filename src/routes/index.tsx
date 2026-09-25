@@ -1,8 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { VentraApp } from "@/components/ventra-app";
+import { ClaimApp } from "@/components/claim/claim-app";
 
-export const Route = createFileRoute("/")({ component: Home });
+type ClaimSearch = { demo?: boolean };
+
+export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): ClaimSearch => {
+    const d = search.demo;
+    return d === 1 || d === "1" || d === true || d === "true" ? { demo: true } : {};
+  },
+  component: Home,
+});
 
 function Home() {
-  return <VentraApp />;
+  const { demo } = Route.useSearch();
+  return <ClaimApp demo={Boolean(demo)} />;
 }

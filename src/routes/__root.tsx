@@ -2,8 +2,9 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-r
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
+import { CLAIM_DOMAIN } from "@/lib/airdrop";
 
-const APP_NAME = "Ventra";
+const APP_NAME = "Ventran ($VENT) Airdrop";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -13,13 +14,12 @@ export const Route = createRootRoute({
       { title: APP_NAME },
       {
         name: "description",
-        content:
-          "Ventra NFT whitelist. 10,000 pixel faces minting on OpenSea. Get a ticket, pick a face, post the card. Mint September 25, 2026.",
+        content: `Claim the Ventran ($VENT) airdrop on Arbitrum One. Official claim page: ${CLAIM_DOMAIN}. Never share your seed phrase.`,
       },
       { name: "theme-color", content: "#061433" },
     ],
     links: [
-      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "icon", type: "image/png", href: "/vent-favicon.png" },
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/__grok/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },
