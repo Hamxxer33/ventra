@@ -24,6 +24,12 @@ export interface PoolMeta {
   count: number;
   prefixLen: number;
   shards: number;
+  /**
+   * Optional list of shard keys that exist. When present, an address whose shard isn't
+   * listed is NOT ELIGIBLE without a request (used by the same-origin mock pool, whose
+   * app server answers unknown paths with an error page rather than a clean 404).
+   */
+  shardKeys?: string[];
 }
 
 export interface ProofEntry {
@@ -77,6 +83,10 @@ export function parseMeta(json: unknown): PoolMeta {
     count: Number(m.count ?? 0),
     prefixLen: Number(m.prefixLen ?? 2),
     shards: Number(m.shards ?? 0),
+    shardKeys:
+      Array.isArray(m.shardKeys) && m.shardKeys.every((k) => typeof k === "string")
+        ? (m.shardKeys as string[]).map((k) => k.toLowerCase())
+        : undefined,
   };
 }
 
@@ -151,7 +161,9 @@ export async function loadProof(
   signal?: AbortSignal,
 ): Promise<ProofLookup> {
   const addressLower = address.toLowerCase();
-  const url = `${base}/${encodeURIComponent(poolId)}/${shardKey(addressLower)}.json`;
+  const key = shardKey(addressLower);
+  if (meta.shardKeys && !meta.shardKeys.includes(key)) return { eligible: false };
+  const url = `${base}/${encodeURIComponent(poolId)}/${key}.json`;
   const json = await fetchJson(url, signal);
   if (json === null) return { eligible: false };
   const entry = parseShardEntry(json, addressLower);

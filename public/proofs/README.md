@@ -6,5 +6,6 @@ externally (CDN / Vercel Blob) and the claim page reads them from `VITE_PROOFS_B
     <VITE_PROOFS_BASE_URL>/<pool>/meta.json
     <VITE_PROOFS_BASE_URL>/<pool>/<xx>.json   # xx = lowercase address.slice(2, 4)
 
-Only `mock/` lives here: a 2-leaf tree of fake addresses, used by `/?demo=1`.
+Only `mock/` lives here: a 3-leaf tree of fake addresses, used by `/?demo=1` (its meta.json
+also lists `shardKeys` so unknown shards resolve to "not eligible" without a request).
 See `src/lib/proofs.ts` and `src/lib/airdrop.ts`.

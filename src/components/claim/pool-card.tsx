@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 import { ClaimCountdown } from "@/components/claim/claim-countdown";
 import { useMounted } from "@/components/claim/use-mounted";
 import { useNow } from "@/components/claim/use-now";
+import { ClaimForPanel } from "@/components/claim/claim-for-panel";
+import { SafetyLine } from "@/components/claim/safety-line";
 
 const text = {
   muted: "font-sans text-lg text-muted",
@@ -346,7 +348,22 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
           Claiming is a normal transaction: your wallet pays its own gas (a little ETH on{" "}
           {VENT.chainName}).
         </p>
+        <SafetyLine />
       </div>
+
+      <ClaimForPanel
+        pool={pool}
+        meta={meta}
+        metaPending={proofsReady && metaQuery.isPending}
+        metaFailed={metaQuery.isError && !(metaQuery.error instanceof ProofDataError)}
+        onRetryMeta={() => void metaQuery.refetch()}
+        claimable={claimable}
+        safetyError={
+          (metaQuery.error instanceof ProofDataError && metaQuery.error.message) ||
+          contractMismatch ||
+          null
+        }
+      />
     </article>
   );
 }

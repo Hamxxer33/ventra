@@ -7,6 +7,8 @@
  *
  * Contract: one `VentAirdrop` deployment per pool (ABI: `src/lib/abi/VentAirdrop.json`).
  *   claim(uint256 amount, bytes32[] proof)                       msg.sender claims for itself
+ *   claimFor(address account, uint256 amount, bytes32[] proof)   anyone pays gas; VENT always
+ *                                                                goes to `account` (same claimed flag)
  *   isClaimed(address) view returns (bool)
  *   canClaim(address, uint256 amount, bytes32[] proof) view returns (bool)
  *   token() / merkleRoot() / claimStart() / claimEnd()
@@ -19,7 +21,7 @@
  *   2. Deploy + fund its VentAirdrop contract with the root from that pool's meta.json.
  *   3. Set the pool's `contract` and `proofsPublished: true` below (and `opensAt` if it moved).
  */
-import { formatUnits, type Abi, type Address } from "viem";
+import { formatUnits, isAddress, type Abi, type Address } from "viem";
 import ventAirdropAbi from "@/lib/abi/VentAirdrop.json";
 
 /** Official claim domain shown in all copy. Owner still choosing ventran.xyz vs wl.ventran.xyz. */
@@ -85,6 +87,11 @@ export interface AirdropPool {
   proofsBaseUrl?: string | null;
   /** Demo-only pool (only shown with `?demo=1`). */
   mock?: boolean;
+  /**
+   * Demo-only: listed addresses treated as already claimed (no chain reads). Also enables
+   * a simulated "claim for another wallet" that never sends a transaction.
+   */
+  demoClaimed?: readonly Address[];
 }
 
 /** Community claims open 5 Oct 2026. Exact time TBD, default 12:00 UTC. */
@@ -126,10 +133,15 @@ export const POOLS: readonly AirdropPool[] = [
 
 /**
  * MOCK pool for demos (`/?demo=1`). Reads `public/proofs/mock/{meta,de}.json`: a
- * 2-leaf tree built with the contract repo's build-merkle.mjs from fake addresses.
+ * 3-leaf tree built with the contract repo's build-merkle.mjs from fake addresses.
  * Not a real allocation, never shown by default.
+ *   DEMO_ADDRESS          the "Demo wallet" connector (12,345.67 mock VENT)
+ *   DEMO_LISTED_ADDRESS   another listed wallet, for "claim for another wallet" (1,000)
+ *   DEMO_CLAIMED_ADDRESS  listed but shown as already claimed (2,500)
  */
 export const DEMO_ADDRESS = "0xde0000000000000000000000000000000000c0de" as Address;
+export const DEMO_LISTED_ADDRESS = "0xde00000000000000000000000000000000000001" as Address;
+export const DEMO_CLAIMED_ADDRESS = "0xde00000000000000000000000000000000000002" as Address;
 
 export const MOCK_POOL: AirdropPool = {
   id: "mock",
@@ -146,6 +158,7 @@ export const MOCK_POOL: AirdropPool = {
   proofsPublished: true,
   proofsBaseUrl: "/proofs",
   mock: true,
+  demoClaimed: [DEMO_CLAIMED_ADDRESS],
 };
 
 export function poolProofsBase(pool: AirdropPool): string | null {
@@ -170,6 +183,20 @@ export function formatVentExact(wei: bigint): string {
   const [whole, frac] = formatUnits(wei, VENT.decimals).split(".");
   const grouped = BigInt(whole).toLocaleString("en-US");
   return frac ? `${grouped}.${frac}` : grouped;
+}
+
+export function shortAddress(a: string): string {
+  return `${a.slice(0, 6)}…${a.slice(-4)}`;
+}
+
+/**
+ * Parse a pasted wallet address for "claim for another wallet". Checksum-insensitive
+ * (any casing accepted); returns the lowercase address used for the shard lookup, or null.
+ */
+export function parseListedAddress(input: string): Address | null {
+  const trimmed = input.trim();
+  if (!isAddress(trimmed, { strict: false })) return null;
+  return trimmed.toLowerCase() as Address;
 }
 
 export function formatCompactTokens(n: number): string {

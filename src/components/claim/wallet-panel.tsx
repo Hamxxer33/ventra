@@ -2,13 +2,9 @@ import { useMemo } from "react";
 import { AlertTriangle, LogOut, Wallet } from "lucide-react";
 import { useConnect, useConnection, useConnectors, useDisconnect, useSwitchChain } from "wagmi";
 import { Button } from "@/components/ui/button";
-import { VENT, isUserRejection } from "@/lib/airdrop";
+import { VENT, isUserRejection, shortAddress } from "@/lib/airdrop";
 import { TARGET_CHAIN } from "@/lib/wagmi";
 import { useMounted } from "@/components/claim/use-mounted";
-
-function shortAddress(a: string): string {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
-}
 
 function hasInjectedProvider(): boolean {
   return typeof window !== "undefined" && Boolean((window as { ethereum?: unknown }).ethereum);
