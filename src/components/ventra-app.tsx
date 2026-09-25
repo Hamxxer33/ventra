@@ -3,7 +3,7 @@ import { CountdownClock } from "@/components/countdown-clock";
 import { OpenSeaSoonButton } from "@/components/opensea-soon-button";
 import { PixelLogo } from "@/components/pixel-logo";
 import { useCountdown } from "@/hooks/use-countdown";
-import { SUPPLY_LABEL } from "@/lib/drop";
+import { SUPPLY_LABEL, OPENSEA_URL } from "@/lib/drop";
 import { getTicketCount } from "@/lib/ticket-claim";
 import { readIssuedCount } from "@/lib/ticket-ledger";
 import { loadProfile, type Profile } from "@/lib/ticket";
@@ -112,8 +112,16 @@ export function VentraApp() {
           <CountdownClock countdown={countdown} className="max-w-xl" />
           <OpenSeaSoonButton
             className="w-fit whitespace-nowrap"
-            label={countdown?.done ? "Mint on OpenSea" : "OpenSea mint"}
+            label="Mint on OpenSea"
           />
+          <a
+            href={OPENSEA_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="w-fit font-sans text-lg text-accent underline underline-offset-4"
+          >
+            opensea.io/collection/ventran
+          </a>
           <p className="font-display text-micro uppercase leading-relaxed text-muted sm:text-pixel">
             {issued !== null
               ? `${issued.toLocaleString("en-US")} / ${SUPPLY_LABEL} claimed`
@@ -128,8 +136,16 @@ export function VentraApp() {
               New wallets are not being accepted. If you already have a ticket, you're in.
             </p>
             <p className="max-w-lg font-sans text-lg text-muted">
-              Thank you for following, reposting, and joining. See you at the mint.
+              Thank you for following, reposting, and joining. Mint is live.
             </p>
+            <a
+              href={OPENSEA_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="w-fit font-sans text-lg text-accent underline underline-offset-4"
+            >
+              {OPENSEA_URL}
+            </a>
             {profile ? (
               <p className={cn("font-display text-pixel text-accent")}>
                 Your ticket #{profile.ticket}
@@ -144,7 +160,17 @@ export function VentraApp() {
             {issued !== null ? ` · ${issued.toLocaleString("en-US")} claimed` : ""} · supply{" "}
             {SUPPLY_LABEL} · mint on opensea 2026-09-25
           </p>
-          <p className="font-sans text-base text-muted">Thank you for everyone.</p>
+          <p className="font-sans text-base text-muted">
+            Thank you for everyone.{" "}
+            <a
+              href={OPENSEA_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent underline underline-offset-4"
+            >
+              {OPENSEA_URL}
+            </a>
+          </p>
         </footer>
       </div>
     </div>
