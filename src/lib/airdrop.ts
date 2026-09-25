@@ -1,20 +1,26 @@
 /**
- * Ventran ($VENT) airdrop configuration — the single place to wire the claim page.
+ * Ventran ($VENT) airdrop configuration: the single place to wire the claim page.
  *
- * STATUS: MOCK / CLAIMS CLOSED. No airdrop contract is deployed yet, every pool has
- * `contract: null` and `merkleRoot: null`, so the claim button stays disabled
- * ("Claims open soon") and no transaction can be sent from this page.
+ * STATUS: CLAIMS CLOSED. No VentAirdrop contract is deployed yet, so every pool has
+ * `contract: null` and the claim button stays disabled ("Claims open soon"). No
+ * transaction can be sent from this page until a contract address is set here.
  *
- * To go live for a pool:
- *   1. Deploy a Merkle-distributor style contract that exposes
- *      `claim(uint256 index, address account, uint256 amount, bytes32[] proof)` and
- *      `isClaimed(uint256 index) view returns (bool)`, funded with that pool's VENT.
- *   2. Publish that pool's 256 proof shards to `${PROOFS_BASE_URL}/<pool.id>/<xx>.json`
- *      (xx = first byte of the lowercase wallet address, "00".."ff"). See `proofs.ts`.
- *   3. Set `contract`, `merkleRoot` and `proofsPublished: true` below, then flip
- *      `status` to "open". Double-check `MERKLE_DISTRIBUTOR_ABI` against the deployed ABI.
+ * Contract: one `VentAirdrop` deployment per pool (ABI: `src/lib/abi/VentAirdrop.json`).
+ *   claim(uint256 amount, bytes32[] proof)                       msg.sender claims for itself
+ *   isClaimed(address) view returns (bool)
+ *   canClaim(address, uint256 amount, bytes32[] proof) view returns (bool)
+ *   token() / merkleRoot() / claimStart() / claimEnd()
+ *
+ * Proofs (~558 MB, NOT in this repo): `${proofsBaseUrl}/<pool.id>/meta.json` and
+ * `${proofsBaseUrl}/<pool.id>/<xx>.json`, xx = lowercase address.slice(2, 4). See `proofs.ts`.
+ *
+ * To open a pool:
+ *   1. Host that pool's proofs (CDN / Vercel Blob) and set `VITE_PROOFS_BASE_URL`.
+ *   2. Deploy + fund its VentAirdrop contract with the root from that pool's meta.json.
+ *   3. Set the pool's `contract` and `proofsPublished: true` below (and `opensAt` if it moved).
  */
-import type { Address, Hex } from "viem";
+import { formatUnits, type Abi, type Address } from "viem";
+import ventAirdropAbi from "@/lib/abi/VentAirdrop.json";
 
 /** Official claim domain shown in all copy. Owner still choosing ventran.xyz vs wl.ventran.xyz. */
 export const CLAIM_DOMAIN = "ventran.xyz";
@@ -33,23 +39,27 @@ export const VENT = {
   explorerTxUrl: (hash: string) => `https://arbiscan.io/tx/${hash}`,
 } as const;
 
-/**
- * Base path of the proof shards. Same-origin by default (`public/proofs/...`);
- * can point at a CDN/bucket via `VITE_PROOFS_BASE_URL` (no trailing slash).
- */
-export const PROOFS_BASE_URL: string =
-  (import.meta.env.VITE_PROOFS_BASE_URL as string | undefined)?.replace(/\/+$/, "") || "/proofs";
+/** VentAirdrop ABI, copied verbatim from the contract repo (`abi/VentAirdrop.json`). */
+export const VENT_AIRDROP_ABI = ventAirdropAbi as Abi;
 
 /**
- * - upcoming:         list/contract not live yet → "Claims open soon"
- * - snapshot-pending: waiting on a snapshot (NFT pool) → "After NFT mint snapshot"
- * - open:             claims live (requires `contract` + `proofsPublished`)
+ * Where the real proof files are hosted (CDN / Vercel Blob), no trailing slash.
+ * Set with `VITE_PROOFS_BASE_URL`. Unset = proofs not hosted yet → pools show
+ * "Eligibility list not published yet" and nothing is fetched.
+ */
+export const PROOFS_BASE_URL: string | null =
+  (import.meta.env.VITE_PROOFS_BASE_URL as string | undefined)?.trim().replace(/\/+$/, "") || null;
+
+/**
+ * - upcoming:         not open yet (auto-opens at `opensAt` once `contract` + proofs are set)
+ * - snapshot-pending: waiting on a snapshot (NFT pool), no date
+ * - open:             force open (still needs `contract` + proofs)
  * - closed:           claim window over
  */
 export type PoolStatus = "upcoming" | "snapshot-pending" | "open" | "closed";
 
 export interface AirdropPool {
-  /** Used in the proof path: `${PROOFS_BASE_URL}/${id}/<xx>.json`. */
+  /** Pool key in the proof path: `${proofsBaseUrl}/${id}/…`. */
   id: string;
   name: string;
   shortName: string;
@@ -60,38 +70,42 @@ export interface AirdropPool {
   allocationSource: string;
   /** Short line under an eligible amount explaining where it came from. */
   eligibleNote?: string;
-  /** Snapshot block the allocation is based on (display/audit only). null = not fixed yet. */
-  snapshotBlock: number | null;
+  /** Snapshot block the list is based on (display only). Omit/null until announced. */
+  snapshotBlock?: number | null;
   status: PoolStatus;
   /** Label on the disabled claim button / status pill while not open. */
   statusLabel: string;
-  /** Merkle distributor for this pool. null = not deployed. */
+  /** Planned claim start (ms since epoch, UTC). null = no date yet. The contract's claimStart is authoritative. */
+  opensAt: number | null;
+  /** VentAirdrop contract for this pool. null = not deployed → claims disabled. */
   contract: Address | null;
-  /** Root committed on-chain for this pool. null = list not final. */
-  merkleRoot: Hex | null;
-  /** Proof shards are uploaded and safe to query. */
+  /** Proof files for this pool are uploaded under `proofsBaseUrl`. */
   proofsPublished: boolean;
+  /** Override for the proofs base URL (the mock pool uses same-origin `/proofs`). */
+  proofsBaseUrl?: string | null;
   /** Demo-only pool (only shown with `?demo=1`). */
   mock?: boolean;
 }
 
+/** Community claims open 5 Oct 2026. Exact time TBD, default 12:00 UTC. */
+export const COMMUNITY_OPENS_AT = Date.UTC(2026, 9, 5, 12, 0, 0);
+
 export const POOLS: readonly AirdropPool[] = [
   {
-    id: "waitlist",
+    id: "community",
     name: "Pool 1 · Community airdrop",
     shortName: "the Community airdrop",
     description:
       "3.5B VENT for waitlist wallets, weighted by each wallet's Arbitrum transaction count at a fixed snapshot block. Opens first.",
     totalTokens: 3_500_000_000,
-    // Amounts are computed off-chain (3.5B / total capped tx count, per-wallet cap TBD) and
-    // shipped in the proof shards. The page only ever displays the amount from the proof file.
+    // Per-wallet amounts are computed off-chain and shipped in the proof files.
+    // The page only ever displays the amount from the proof file; it never computes one.
     allocationSource: "Waitlist wallets × Arbitrum transactions at the snapshot block",
     eligibleNote: "Based on your Arbitrum transactions at the snapshot",
-    snapshotBlock: null,
     status: "upcoming",
     statusLabel: "Claims open soon",
+    opensAt: COMMUNITY_OPENS_AT,
     contract: null,
-    merkleRoot: null,
     proofsPublished: false,
   },
   {
@@ -102,18 +116,18 @@ export const POOLS: readonly AirdropPool[] = [
       "1.5B VENT for Ventra NFT holders, from a holder snapshot taken after the mint closes. Opens after Pool 1.",
     totalTokens: 1_500_000_000,
     allocationSource: "Ventra NFT holder snapshot (after mint closes)",
-    snapshotBlock: null,
     status: "snapshot-pending",
     statusLabel: "After NFT mint snapshot",
+    opensAt: null,
     contract: null,
-    merkleRoot: null,
     proofsPublished: false,
   },
 ];
 
 /**
- * MOCK pool for demos (`/?demo=1`). Reads `public/proofs/mock/de.json`, which holds
- * one fake allocation for `DEMO_ADDRESS`. Not a real allocation — never shown by default.
+ * MOCK pool for demos (`/?demo=1`). Reads `public/proofs/mock/{meta,de}.json`: a
+ * 2-leaf tree built with the contract repo's build-merkle.mjs from fake addresses.
+ * Not a real allocation, never shown by default.
  */
 export const DEMO_ADDRESS = "0xde0000000000000000000000000000000000c0de" as Address;
 
@@ -125,59 +139,57 @@ export const MOCK_POOL: AirdropPool = {
   totalTokens: 0,
   allocationSource: "public/proofs/mock/*.json (mock)",
   eligibleNote: "Mock amount from public/proofs/mock/de.json",
-  snapshotBlock: null,
   status: "upcoming",
   statusLabel: "Claims open soon",
+  opensAt: null,
   contract: null,
-  merkleRoot: null,
   proofsPublished: true,
+  proofsBaseUrl: "/proofs",
   mock: true,
 };
 
-/**
- * Minimal Merkle-distributor ABI (Uniswap MerkleDistributor style).
- * TODO: confirm against the deployed contract before setting any `contract` above.
- */
-export const MERKLE_DISTRIBUTOR_ABI = [
-  {
-    type: "function",
-    name: "claim",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "index", type: "uint256" },
-      { name: "account", type: "address" },
-      { name: "amount", type: "uint256" },
-      { name: "merkleProof", type: "bytes32[]" },
-    ],
-    outputs: [],
-  },
-  {
-    type: "function",
-    name: "isClaimed",
-    stateMutability: "view",
-    inputs: [{ name: "index", type: "uint256" }],
-    outputs: [{ name: "", type: "bool" }],
-  },
-] as const;
-
-export function isPoolClaimable(pool: AirdropPool): boolean {
-  return pool.status === "open" && pool.contract !== null && pool.proofsPublished;
+export function poolProofsBase(pool: AirdropPool): string | null {
+  return pool.proofsBaseUrl !== undefined ? pool.proofsBaseUrl : PROOFS_BASE_URL;
 }
 
-export function formatVent(amount: bigint, decimals = VENT.decimals): string {
-  const base = 10n ** BigInt(decimals);
-  const whole = amount / base;
-  const frac = amount % base;
-  const wholeStr = whole.toLocaleString("en-US");
-  if (frac === 0n) return wholeStr;
-  const fracStr = frac.toString().padStart(decimals, "0").slice(0, 2).replace(/0+$/, "");
-  return fracStr ? `${wholeStr}.${fracStr}` : wholeStr;
+/** Proofs are both marked published and actually have a host configured. */
+export function poolProofsReady(pool: AirdropPool): boolean {
+  return pool.proofsPublished && poolProofsBase(pool) !== null;
+}
+
+/** Page-side gate. The contract's claimStart/claimEnd + canClaim are the final word. */
+export function isPoolClaimable(pool: AirdropPool, now: number): boolean {
+  if (pool.contract === null || !poolProofsReady(pool)) return false;
+  if (pool.status === "closed" || pool.status === "snapshot-pending") return false;
+  if (pool.status === "open") return true;
+  return pool.opensAt !== null && now >= pool.opensAt;
+}
+
+/** Exact token amount from wei (formatUnits), with thousands separators. Never rounds. */
+export function formatVentExact(wei: bigint): string {
+  const [whole, frac] = formatUnits(wei, VENT.decimals).split(".");
+  const grouped = BigInt(whole).toLocaleString("en-US");
+  return frac ? `${grouped}.${frac}` : grouped;
 }
 
 export function formatCompactTokens(n: number): string {
   if (n >= 1_000_000_000) return `${n / 1_000_000_000}B`;
   if (n >= 1_000_000) return `${n / 1_000_000}M`;
   return n.toLocaleString("en-US");
+}
+
+export function formatOpensAt(ms: number): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+    hour12: false,
+  })
+    .format(new Date(ms))
+    .concat(" UTC");
 }
 
 /** True if a wallet error (or anything in its cause chain) is a user rejection. */

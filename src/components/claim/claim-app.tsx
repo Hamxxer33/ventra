@@ -5,7 +5,15 @@ import { ClaimProviders } from "@/components/claim/claim-providers";
 import { CopyAddress } from "@/components/claim/copy-address";
 import { PoolCard } from "@/components/claim/pool-card";
 import { WalletPanel } from "@/components/claim/wallet-panel";
-import { CLAIM_DOMAIN, MOCK_POOL, POOLS, VENT, formatCompactTokens } from "@/lib/airdrop";
+import {
+  CLAIM_DOMAIN,
+  COMMUNITY_OPENS_AT,
+  MOCK_POOL,
+  POOLS,
+  VENT,
+  formatCompactTokens,
+  formatOpensAt,
+} from "@/lib/airdrop";
 import { TELEGRAM_URL, WEBSITE_URL, X_URL } from "@/lib/drop";
 
 function Frame({ title, n, children }: { title: string; n?: string; children: React.ReactNode }) {
@@ -62,8 +70,9 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
             </h1>
             <p className="max-w-2xl font-sans text-xl leading-snug text-muted">
               {formatCompactTokens(total)} VENT across two pools on {VENT.chainName}. The Community
-              airdrop for waitlist wallets opens first; Ventra NFT holders follow after the mint
-              snapshot. Claims are closed until the airdrop contracts are live.
+              airdrop for waitlist wallets opens {formatOpensAt(COMMUNITY_OPENS_AT)}; Ventra NFT
+              holders follow after the mint snapshot. Claims stay closed until the airdrop contracts
+              are live.
             </p>
           </section>
 

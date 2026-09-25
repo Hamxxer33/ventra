@@ -1,0 +1,13 @@
+{
+  "pool": "mock",
+  "root": "0x2e04916fa89df8de900472db6f312c4c188cdffac94cd71036c318bba36e43a8",
+  "token": "0xB67C6b8471d73009EbBa8A6a895674aEeBe5af26",
+  "decimals": 18,
+  "total": "13345670000000000000000",
+  "totalVent": "13345.67",
+  "count": 2,
+  "prefixLen": 2,
+  "shards": 1,
+  "shardPath": "<xx>.json, xx = lowercase address.slice(2, 4)",
+  "leafEncoding": "keccak256(bytes.concat(keccak256(abi.encode(address account, uint256 amount))))"
+}
