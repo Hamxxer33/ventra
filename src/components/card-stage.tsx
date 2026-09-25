@@ -141,7 +141,7 @@ export function CardStage({
             <p className="font-display text-pixel text-accent">YOUR CARD</p>
             <p className="font-sans text-lg text-muted">
               Ticket #{profile?.ticket} is baked in. The countdown ticks live on the image.
-              Download the PNG and post it on X. Mint opens on OpenSea once the collection is live.
+              Download the PNG and post it on X. Mint is live on OpenSea.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button onClick={onDownload} disabled={!ready || busy} variant="secondary">

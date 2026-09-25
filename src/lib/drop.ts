@@ -8,3 +8,4 @@ export const X_POST_URL = `https://x.com/${X_HANDLE}/status/${X_POST_ID}`;
 export const X_REPOST_URL = `https://x.com/intent/retweet?tweet_id=${X_POST_ID}`;
 export const WL_HOST = "wl.ventran.xyz";
 export const WL_URL = `https://${WL_HOST}`;
+export const OPENSEA_URL = "https://opensea.io/collection/ventran";
