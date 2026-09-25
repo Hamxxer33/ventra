@@ -1,50 +1,28 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { CardStage } from "@/components/card-stage";
 import { CountdownClock } from "@/components/countdown-clock";
-import { FacePicker } from "@/components/face-picker";
 import { OpenSeaSoonButton } from "@/components/opensea-soon-button";
 import { PixelLogo } from "@/components/pixel-logo";
-import { WhitelistForm } from "@/components/whitelist-form";
 import { useCountdown } from "@/hooks/use-countdown";
 import { SUPPLY_LABEL } from "@/lib/drop";
-import { claimTicket, getTicketCount } from "@/lib/ticket-claim";
-import { issueTicket, readIssuedCount } from "@/lib/ticket-ledger";
-import { loadProfile, saveProfile, setProfileFace, type Profile } from "@/lib/ticket";
+import { getTicketCount } from "@/lib/ticket-claim";
+import { readIssuedCount } from "@/lib/ticket-ledger";
+import { loadProfile, type Profile } from "@/lib/ticket";
 import { cn } from "@/lib/utils";
-
-const STEPS = [
-  { n: "01", id: "apply", label: "APPLY" },
-  { n: "02", id: "face", label: "FACE" },
-  { n: "03", id: "card", label: "CARD" },
-] as const;
-
-function stepIndex(profile: Profile | null): number {
-  if (!profile) return 0;
-  if (!profile.faceId) return 1;
-  return 2;
-}
 
 function SectionFrame({
   n,
   title,
   children,
-  active,
   id,
 }: {
   n: string;
   title: string;
   children: ReactNode;
-  active: boolean;
   id: string;
 }) {
   return (
     <section id={id} className="scroll-mt-6">
-      <div
-        className={cn(
-          "border-2 bg-surface p-5 shadow-pixel sm:p-8",
-          active ? "border-accent" : "border-border",
-        )}
-      >
+      <div className="border-2 border-accent bg-surface p-5 shadow-pixel sm:p-8">
         <header className="mb-6 flex items-baseline justify-between gap-4">
           <h2 className="font-display text-pixel text-fg sm:text-pixel-lg">{title}</h2>
           <span className="font-display text-pixel text-muted">{n}</span>
@@ -58,7 +36,6 @@ function SectionFrame({
 export function VentraApp() {
   const countdown = useCountdown();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [ready, setReady] = useState(false);
   const [issued, setIssued] = useState<number | null>(null);
 
   useEffect(() => {
@@ -76,25 +53,12 @@ export function VentraApp() {
 
     async function boot() {
       const local = loadProfile();
-      if (!cancelled) {
-        setProfile(local);
-        setReady(true);
-      }
+      if (!cancelled) setProfile(local);
       try {
         const count = await fetchIssued();
         if (!cancelled) setIssued(count);
       } catch {
         /* count is decorative */
-      }
-      if (!local || local.ledger === "global") return;
-      const claimed = await issueTicket(local.handle, () =>
-        claimTicket({ data: { handle: local.handle } }),
-      );
-      const next = { ...local, ticket: claimed.ticket, ledger: "global" as const };
-      saveProfile(next);
-      if (!cancelled) {
-        setProfile(next);
-        setIssued(claimed.issued);
       }
     }
 
@@ -114,32 +78,6 @@ export function VentraApp() {
     };
   }, []);
 
-  const current = stepIndex(profile);
-
-  useEffect(() => {
-    if (!ready) return;
-    const id = STEPS[current]?.id;
-    if (!id || current === 0) return;
-    const el = document.getElementById(id);
-    if (!el) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-  }, [current, ready]);
-
-  function onAssigned(next: Profile) {
-    setProfile(next);
-    readIssuedCount()
-      .then((count) => setIssued(count))
-      .catch(() => {
-        /* ignore */
-      });
-  }
-
-  function onSelectFace(id: string) {
-    const next = setProfileFace(id);
-    if (next) setProfile(next);
-  }
-
   return (
     <div className="relative min-h-dvh">
       <div className="ventra-scanlines" aria-hidden="true" />
@@ -156,24 +94,20 @@ export function VentraApp() {
           </div>
           {profile ? (
             <p className="font-display text-micro text-fg sm:text-pixel">#{profile.ticket}</p>
-          ) : issued !== null ? (
-            <p className="font-display text-micro text-muted sm:text-pixel">
-              {issued.toLocaleString("en-US")} CLAIMED
-            </p>
           ) : (
-            <p className="font-display text-micro text-muted sm:text-pixel">WL OPEN</p>
+            <p className="font-display text-micro text-muted sm:text-pixel">WL CLOSED</p>
           )}
         </header>
 
         <section className="flex flex-col gap-6">
-          <p className="font-display text-pixel text-accent">WHITELIST OPEN</p>
+          <p className="font-display text-pixel text-accent">WHITELIST CLOSED</p>
           <h1 className="max-w-3xl font-display text-pixel-hero leading-tight text-fg">
-            {SUPPLY_LABEL} pixel NFTs
+            Thank you
             <span className="ventra-caret ml-1 inline-block h-[0.9em] w-3 bg-accent align-baseline" />
           </h1>
           <p className="max-w-xl font-sans text-xl leading-snug text-muted">
-            Get a ticket. Pick a face. Post the card on X. Mint on OpenSea 25 September 2026, 12:00
-            UTC. One per wallet.
+            Wallet intake is closed. Thank you to everyone who claimed a ticket and showed up for
+            Ventra. Mint on OpenSea 25 September 2026, 12:00 UTC.
           </p>
           <CountdownClock countdown={countdown} className="max-w-xl" />
           <OpenSeaSoonButton
@@ -188,67 +122,29 @@ export function VentraApp() {
           </p>
         </section>
 
-        <ol className="flex flex-wrap items-center gap-2">
-          {STEPS.map((step, i) => (
-            <li key={step.id} className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "border-2 px-3 py-2 font-display text-micro sm:text-pixel",
-                  i === current
-                    ? "border-accent bg-accent text-fg"
-                    : i < current
-                      ? "border-accent-dim bg-accent-dim text-accent"
-                      : "border-border bg-surface text-muted",
-                )}
-              >
-                {step.n} {step.label}
-              </span>
-              {i < STEPS.length - 1 ? (
-                <span className="hidden h-0.5 w-6 bg-border sm:block" aria-hidden="true" />
-              ) : null}
-            </li>
-          ))}
-        </ol>
-
-        <div className="flex flex-col gap-8">
-          <SectionFrame n="01" id="apply" title="WHITELIST" active={current === 0}>
-            <p className="mb-6 max-w-lg font-sans text-lg text-muted">
-              Follow @Ventranxyz, turn on notifications, repost the drop post, join Telegram, then
-              drop your X handle and wallet. Tickets are global and sequential — one number per
-              handle, starting at 00001.
+        <SectionFrame n="01" id="thanks" title="THANK YOU">
+          <div className="flex flex-col gap-4">
+            <p className="max-w-lg font-sans text-lg text-fg">
+              New wallets are not being accepted. If you already have a ticket, you're in.
             </p>
-            {ready ? (
-              <WhitelistForm profile={profile} onAssigned={onAssigned} />
-            ) : (
-              <p className="font-display text-pixel text-muted">LOADING</p>
-            )}
-          </SectionFrame>
-
-          <SectionFrame n="02" id="face" title="CHOOSE A FACE" active={current === 1}>
-            <FacePicker
-              selectedId={profile?.faceId ?? null}
-              locked={!profile}
-              onSelect={onSelectFace}
-            />
-          </SectionFrame>
-
-          <SectionFrame n="03" id="card" title="SHARE THE CARD" active={current === 2}>
-            <CardStage
-              profile={profile}
-              countdown={countdown}
-              locked={!profile || !profile.faceId}
-            />
-          </SectionFrame>
-        </div>
+            <p className="max-w-lg font-sans text-lg text-muted">
+              Thank you for following, reposting, and joining. See you at the mint.
+            </p>
+            {profile ? (
+              <p className={cn("font-display text-pixel text-accent")}>
+                Your ticket #{profile.ticket}
+              </p>
+            ) : null}
+          </div>
+        </SectionFrame>
 
         <footer className="flex flex-col gap-3 border-t-2 border-border pt-6 pb-8">
           <p className="font-display text-micro leading-relaxed text-muted sm:text-pixel">
-            ventra@mainnet: ~/whitelist · {issued !== null ? `${issued.toLocaleString("en-US")} claimed · ` : ""}
-            supply {SUPPLY_LABEL} · mint on opensea 2026-09-25
+            ventra@mainnet: ~/whitelist · closed
+            {issued !== null ? ` · ${issued.toLocaleString("en-US")} claimed` : ""} · supply{" "}
+            {SUPPLY_LABEL} · mint on opensea 2026-09-25
           </p>
-          <p className="font-sans text-base text-muted">
-            A ticket is not a mint. Same X handle always returns the same number.
-          </p>
+          <p className="font-sans text-base text-muted">Thank you for everyone.</p>
         </footer>
       </div>
     </div>
