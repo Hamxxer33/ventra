@@ -24,8 +24,8 @@
 import { formatUnits, isAddress, type Abi, type Address } from "viem";
 import ventAirdropAbi from "@/lib/abi/VentAirdrop.json";
 
-/** Official claim domain shown in all copy. Owner still choosing ventran.xyz vs wl.ventran.xyz. */
-export const CLAIM_DOMAIN = "ventran.xyz";
+/** Official claim domain shown in all copy (safety notice, header, meta description). */
+export const CLAIM_DOMAIN = "claim.ventran.xyz";
 export const CLAIM_URL = `https://${CLAIM_DOMAIN}`;
 
 export const VENT = {
