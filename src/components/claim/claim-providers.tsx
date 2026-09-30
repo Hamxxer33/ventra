@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
+import { ensureAppKit } from "@/lib/appkit";
 import { makeWagmiConfig } from "@/lib/wagmi";
 
 export function ClaimProviders({ demo, children }: { demo: boolean; children: ReactNode }) {
@@ -9,6 +10,11 @@ export function ClaimProviders({ demo, children }: { demo: boolean; children: Re
     () =>
       new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } }),
   );
+
+  useEffect(() => {
+    if (!demo) ensureAppKit();
+  }, [demo]);
+
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
