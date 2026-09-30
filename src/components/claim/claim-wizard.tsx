@@ -158,16 +158,7 @@ function DistributionBlurb() {
         <li>No team share</li>
       </ul>
       <p className="font-sans text-sm text-muted">
-        Token CA:{" "}
-        <a
-          href={VENT.explorerTokenUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="break-all text-fg underline underline-offset-4"
-        >
-          {VENT.address}
-        </a>{" "}
-        on {VENT.chainName}. Official NFT:{" "}
+        Official NFT:{" "}
         <a
           href={OPENSEA_URL || VENTRAN_OPENSEA_URL}
           target="_blank"
@@ -594,7 +585,7 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
     }
     if (feeMismatch) {
       setRegisterError(
-        `On-chain fee is ${formatEthExact(onChainFee!)} ETH; live $1 quote is ${formatEthExact(quoteWei!)} ETH (>${REGISTRATION.feeTolerance * 100}% drift). Refresh or wait for owner update.`,
+        `On-chain fee is ${formatEthExact(onChainFee!)} ETH; live quote is ${formatEthExact(quoteWei!)} ETH (>${REGISTRATION.feeTolerance * 100}% drift). Refresh or wait for owner update.`,
       );
       return;
     }
@@ -904,7 +895,7 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
             {contractSet && registrationOpen === false ? (
               <div className="border border-[#e8d48b] bg-[#fbf6e6] px-4 py-3 font-sans text-sm text-fg">
                 Registration is not open yet. You can check eligibility and prepare a remap; the
-                pay button stays disabled until the owner opens registration on-chain.
+                register button stays disabled until the owner opens registration on-chain.
               </div>
             ) : null}
             {contractSet && paused === true ? (
@@ -913,33 +904,15 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
               </div>
             ) : null}
             <div className="border border-border bg-bg p-4">
-              <p className="mb-2 font-sans text-xs font-medium uppercase tracking-wider text-fg">
-                Registration fee: ${REGISTRATION.feeUsd} in ETH on Arbitrum
-              </p>
               <p className="font-sans text-sm text-fg">
-                Pay about <strong>{feeLabel}</strong> in ETH on {VENT.chainName} when you register.
-                That is the only fee.
+                Confirm registration in your wallet on {VENT.chainName}. Your wallet will show the
+                exact amount before you approve.
               </p>
-              {priceQuery.data ? (
-                <p className="mt-2 font-sans text-xs text-muted">
-                  ETH/USD ≈ ${priceQuery.data.usd.toLocaleString("en-US", { maximumFractionDigits: 2 })}
-                  {priceQuery.data.stale ? " (stale price — refresh soon)" : ""} · via{" "}
-                  {priceQuery.data.source}
-                  {payWei !== null ? ` · ${formatEthExact(payWei)} ETH` : ""}
-                </p>
-              ) : priceQuery.isError ? (
-                <p className="mt-2 font-sans text-xs text-danger">
-                  Could not fetch ETH/USD — try again.
-                </p>
-              ) : (
-                <p className="mt-2 font-sans text-xs text-muted">Fetching live ETH price…</p>
-              )}
               {feeMismatch ? (
                 <p className="mt-2 flex items-start gap-2 font-sans text-sm text-danger">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                  On-chain fee is {formatEthExact(onChainFee!)} ETH; live $1 quote is{" "}
-                  {formatEthExact(quoteWei!)} ETH. Refresh or wait for owner update — submit
-                  blocked.
+                  On-chain fee does not match the live quote. Refresh or wait for owner update —
+                  submit blocked.
                 </p>
               ) : null}
             </div>
@@ -980,7 +953,7 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                     <span className="text-danger">Not set</span>
                   )}
                   <span className="mt-1 block text-xs text-muted">
-                    Registration fee goes here.
+                    On-chain fee recipient.
                   </span>
                 </dd>
               </div>
@@ -1010,7 +983,7 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                     </span>
                   ) : (
                     <span className="mt-2 block text-muted">
-                      Ready to pay the registration fee in ETH.
+                      Ready to register.
                     </span>
                   )}
                 </p>
@@ -1079,7 +1052,7 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                           ? "Confirm in wallet…"
                           : receipt.isLoading
                             ? "Confirming…"
-                            : `Pay $${REGISTRATION.feeUsd} in ETH`}
+                            : "Register"}
               </Button>
               {demo && !contractSet ? (
                 <Button variant="secondary" onClick={onDemoRegister}>
