@@ -23,6 +23,7 @@ import {
 import { type Address, type Hash, type Hex } from "viem";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { ConnectWalletButton } from "@/components/claim/connect-wallet-button";
 import { Input } from "@/components/ui/input";
 import { ClaimCountdown } from "@/components/claim/claim-countdown";
 import { SafetyLine } from "@/components/claim/safety-line";
@@ -691,23 +692,23 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                   Connect
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  {visibleConnectors.map((c) => (
-                    <Button
-                      key={c.uid}
-                      variant={c.type === "mock" ? "secondary" : "primary"}
-                      disabled={connect.isPending}
-                      onClick={() => connect.mutate({ connector: c, chainId: TARGET_CHAIN.id })}
-                    >
-                      <Wallet className="size-4" />
-                      {c.type === "mock"
-                        ? "Demo wallet"
-                        : c.id === "injected"
-                          ? "Connect wallet"
-                          : c.id === "walletConnect"
-                            ? "WalletConnect"
-                            : c.name}
-                    </Button>
-                  ))}
+                  {demo ? (
+                    visibleConnectors
+                      .filter((c) => c.type === "mock" || c.id === "injected")
+                      .map((c) => (
+                        <Button
+                          key={c.uid}
+                          variant={c.type === "mock" ? "secondary" : "primary"}
+                          disabled={connect.isPending}
+                          onClick={() => connect.mutate({ connector: c, chainId: TARGET_CHAIN.id })}
+                        >
+                          <Wallet className="size-4" />
+                          {c.type === "mock" ? "Demo wallet" : "Connect wallet"}
+                        </Button>
+                      ))
+                  ) : (
+                    <ConnectWalletButton label="Connect wallet" />
+                  )}
                 </div>
                 {connect.error ? (
                   <p className="font-sans text-sm text-danger">
@@ -1014,23 +1015,23 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                   {registerAs ? ` (${shortAddress(registerAs)})` : ""}.
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  {visibleConnectors.map((c) => (
-                    <Button
-                      key={c.uid}
-                      variant={c.type === "mock" ? "secondary" : "primary"}
-                      disabled={connect.isPending}
-                      onClick={() => connect.mutate({ connector: c, chainId: TARGET_CHAIN.id })}
-                    >
-                      <Wallet className="size-4" />
-                      {c.type === "mock"
-                        ? "Demo wallet"
-                        : c.id === "injected"
-                          ? "Connect wallet"
-                          : c.id === "walletConnect"
-                            ? "WalletConnect"
-                            : c.name}
-                    </Button>
-                  ))}
+                  {demo ? (
+                    visibleConnectors
+                      .filter((c) => c.type === "mock" || c.id === "injected")
+                      .map((c) => (
+                        <Button
+                          key={c.uid}
+                          variant={c.type === "mock" ? "secondary" : "primary"}
+                          disabled={connect.isPending}
+                          onClick={() => connect.mutate({ connector: c, chainId: TARGET_CHAIN.id })}
+                        >
+                          <Wallet className="size-4" />
+                          {c.type === "mock" ? "Demo wallet" : "Connect wallet"}
+                        </Button>
+                      ))
+                  ) : (
+                    <ConnectWalletButton label="Connect wallet" />
+                  )}
                 </div>
               </div>
             ) : null}
