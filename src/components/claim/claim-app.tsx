@@ -78,11 +78,15 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
               Register for your claim
             </h1>
             <p className="max-w-xl font-sans text-base leading-relaxed text-fg/80 sm:text-lg">
-              Check eligibility, remap if needed, then register with{" "}
+              Check eligibility, see both allocations, then register for about{" "}
               <strong className="font-semibold text-fg">
                 ${registrationFeeUsd} in ETH on Arbitrum
               </strong>
-              . Claims open {formatOpensAt(COMMUNITY_OPENS_AT)}.
+              .
+            </p>
+            <p className="max-w-xl font-sans text-base leading-relaxed text-fg/80 sm:text-lg">
+              Community claims open {formatOpensAt(COMMUNITY_OPENS_AT)}. NFT claim window
+              announced separately.
             </p>
           </section>
 
@@ -194,11 +198,11 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
                   </li>
                   <li>Never share your seed phrase or private key.</li>
                   <li>
-                    The only fee is{" "}
+                    The only fee is about{" "}
                     <strong className="text-fg">
                       ${registrationFeeUsd} in ETH on Arbitrum
-                    </strong>{" "}
-                    paid as msg.value to VentRegistration. No unlimited approvals.
+                    </strong>
+                    , paid on this site when you register.
                   </li>
                 </ul>
               </div>
@@ -261,7 +265,7 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
               </Link>
             </nav>
             <p className="font-sans text-xs text-muted">
-              ${registrationFeeUsd} in ETH on Arbitrum · claim{" "}
+              About ${registrationFeeUsd} in ETH on Arbitrum to register · claims{" "}
               {formatOpensAt(COMMUNITY_OPENS_AT)} · {CLAIM_DOMAIN}
             </p>
           </footer>
