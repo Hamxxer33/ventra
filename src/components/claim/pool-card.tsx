@@ -346,7 +346,7 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
         ) : null}
         <p className="font-sans text-base text-muted">
           When claims open, this is one transaction on {VENT.chainName}. Registration is a separate
-          step with a $1 in ETH on Arbitrum — we never ask for unlimited approvals or seed phrases.
+          step — about $1 in ETH on Arbitrum. We never ask for seed phrases or any other fee.
         </p>
         <SafetyLine />
       </div>
