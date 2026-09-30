@@ -1,6 +1,6 @@
 import { ExternalLink, ShieldAlert } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { TelegramLogo, XLogo } from "@/components/pixel-logo";
+import { TelegramLogo } from "@/components/pixel-logo";
 import { ClaimProviders } from "@/components/claim/claim-providers";
 import { ClaimWizard } from "@/components/claim/claim-wizard";
 import { CopyAddress } from "@/components/claim/copy-address";
@@ -13,7 +13,7 @@ import {
   formatOpensAt,
 } from "@/lib/airdrop";
 import { registrationFeeUsd } from "@/lib/register";
-import { OPENSEA_URL, TELEGRAM_URL, WEBSITE_URL, X_URL } from "@/lib/drop";
+import { OPENSEA_URL, TELEGRAM_URL, WEBSITE_URL } from "@/lib/drop";
 
 export function ClaimApp({ demo = false }: { demo?: boolean }) {
   const total =
@@ -21,140 +21,247 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
 
   return (
     <ClaimProviders demo={demo}>
-      <div className="relative min-h-dvh">
-        <div className="ventra-scanlines" aria-hidden="true" />
-        <div className="ventra-vignette" aria-hidden="true" />
-
-        <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-6 sm:gap-12 sm:px-6 sm:py-10">
-          <header className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <img
-                src="/vent-logo-192.png"
-                alt="Ventran logo"
-                width={44}
-                height={44}
-                className="size-11 rounded-full border-2 border-accent"
-              />
-              <div>
-                <p className="font-display text-pixel text-accent">VENTRAN</p>
-                <p className="font-sans text-base text-muted">{CLAIM_DOMAIN}</p>
+      <div className="claim-concrete relative min-h-dvh">
+        <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-0 px-4 sm:px-6">
+          {/* Top bar */}
+          <header className="flex items-center justify-between gap-4 py-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-8 items-center justify-center bg-fg text-[10px] font-bold leading-none text-bg">
+                V
               </div>
+              <span className="sr-only">Ventran</span>
             </div>
-            <p className="font-display text-micro text-muted sm:text-pixel">$VENT · ARB</p>
+            <a
+              href="#register"
+              className="inline-flex h-9 items-center border border-border bg-surface px-4 font-sans text-sm text-fg hover:bg-surface-2"
+            >
+              Connect Wallet
+            </a>
           </header>
 
+          {/* Brand + stats */}
+          <div className="flex flex-col gap-4 border-y border-border py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center">
+              <div className="border border-fg px-2 py-1.5 font-sans text-[11px] font-semibold tracking-[0.18em] text-fg sm:text-xs">
+                VENTRAN&nbsp;&nbsp;CLAIM
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 font-sans text-sm text-fg">
+              <span>
+                Supply{" "}
+                <strong className="font-semibold">{formatCompactTokens(total)}</strong>
+              </span>
+              <span>
+                Community{" "}
+                <strong className="font-semibold">
+                  {formatCompactTokens(DISTRIBUTION.community)}
+                </strong>
+              </span>
+              <span>
+                NFT{" "}
+                <strong className="font-semibold">
+                  {formatCompactTokens(DISTRIBUTION.nft)}
+                </strong>
+              </span>
+            </div>
+          </div>
+
           {demo ? (
-            <div className="border-2 border-dashed border-danger bg-bg p-4 font-sans text-lg text-danger">
+            <div className="mt-4 border border-danger bg-[#fdecea] px-4 py-3 font-sans text-sm text-danger">
               DEMO MODE: fake community allocations and demo wallet enabled. Not a real airdrop.
             </div>
           ) : null}
 
-          <section className="flex flex-col gap-5">
-            <p className="font-display text-pixel text-accent">$VENT REGISTER</p>
-            <h1 className="max-w-3xl font-display text-pixel-hero leading-tight text-fg">
+          {/* Hero */}
+          <section className="flex flex-col gap-3 py-10 sm:py-14">
+            <h1 className="max-w-2xl text-4xl font-semibold leading-[1.08] tracking-tight text-fg sm:text-5xl">
               Register for your claim
-              <span className="ventra-caret ml-1 inline-block h-[0.9em] w-3 bg-accent align-baseline" />
             </h1>
-            <p className="max-w-2xl font-sans text-xl leading-snug text-muted">
-              {formatCompactTokens(total)} VENT on {VENT.chainName}:{" "}
-              {formatCompactTokens(DISTRIBUTION.liquidity)} liquidity ·{" "}
-              {formatCompactTokens(DISTRIBUTION.community)} community ·{" "}
-              {formatCompactTokens(DISTRIBUTION.nft)} NFT holders · no team share. Check
-              eligibility, remap if needed, then register with a{" "}
-              <strong className="text-fg">${registrationFeeUsd} ARB</strong> fee. Claims open{" "}
-              {formatOpensAt(COMMUNITY_OPENS_AT)}.
+            <p className="max-w-xl font-sans text-base leading-relaxed text-fg/80 sm:text-lg">
+              Check eligibility, remap if needed, then register with{" "}
+              <strong className="font-semibold text-fg">
+                ${registrationFeeUsd} in ETH on Arbitrum
+              </strong>
+              . Claims open {formatOpensAt(COMMUNITY_OPENS_AT)}.
             </p>
           </section>
 
-          <ClaimWizard demo={demo} />
+          {/* Wizard = claim cards */}
+          <div id="register" className="border-t border-border pt-8 pb-4">
+            <ClaimWizard demo={demo} />
+          </div>
 
-          <section className="flex flex-col gap-4 border-2 border-danger bg-surface p-5 shadow-pixel sm:p-8">
-            <h2 className="flex items-center gap-3 font-display text-pixel text-danger sm:text-pixel-lg">
-              <ShieldAlert className="size-5 shrink-0" /> OFFICIAL LINKS ONLY
-            </h2>
-            <ul className="flex list-disc flex-col gap-2 pl-5 font-sans text-lg text-fg">
-              <li>
-                Only register / claim at <strong className="text-accent">{CLAIM_DOMAIN}</strong>.
-                Links in DMs or replies are scams.
-              </li>
-              <li>Never share your seed phrase or private key. No one from Ventran will ask.</li>
-              <li>
-                The only fee is <strong>${registrationFeeUsd} in ARB</strong> to register. We never
-                ask for unlimited approvals or any other payment.
-              </li>
-              <li>
-                Official NFT collection:{" "}
-                <a
-                  href={OPENSEA_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-accent underline underline-offset-4"
-                >
-                  opensea.io/collection/ventran
-                </a>
-                . Trust announcements only from our official X and Telegram.
-              </li>
-            </ul>
-          </section>
-
-          <section className="border-2 border-accent bg-surface p-5 shadow-pixel sm:p-8">
-            <header className="mb-5 flex items-baseline justify-between gap-4">
-              <h2 className="font-display text-pixel text-fg sm:text-pixel-lg">VENT TOKEN</h2>
-              <span className="font-display text-pixel text-muted">CA</span>
-            </header>
-            <div className="flex flex-col gap-4">
-              <p className="font-sans text-lg text-muted">
-                {VENT.name} ({VENT.symbol}) · {VENT.chainName} · {VENT.decimals} decimals ·{" "}
-                {VENT.totalSupply.toLocaleString("en-US")} supply
-              </p>
-              <p className="font-display text-micro uppercase text-muted">Contract address</p>
-              <CopyAddress address={VENT.address} href={VENT.explorerTokenUrl} />
+          {/* Resources */}
+          <section className="border-t border-border py-10">
+            <h2 className="mb-5 text-xl font-semibold text-fg">Resources</h2>
+            <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr] lg:items-start">
+              <ul className="divide-y divide-border border border-border bg-surface">
+                <li>
+                  <a
+                    href={VENT.explorerTokenUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between gap-3 px-4 py-3.5 font-sans text-sm text-fg hover:bg-surface-2"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span className="inline-flex size-6 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-fg">
+                        V
+                      </span>
+                      Arbiscan {VENT.address.slice(0, 5)}…{VENT.address.slice(-5)}
+                    </span>
+                    <ExternalLink className="size-3.5 text-muted" />
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={OPENSEA_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between gap-3 px-4 py-3.5 font-sans text-sm text-fg hover:bg-surface-2"
+                  >
+                    <span>OpenSea · Ventran NFT</span>
+                    <ExternalLink className="size-3.5 text-muted" />
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={WEBSITE_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between gap-3 px-4 py-3.5 font-sans text-sm text-fg hover:bg-surface-2"
+                  >
+                    <span>ventran.xyz</span>
+                    <ExternalLink className="size-3.5 text-muted" />
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={TELEGRAM_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between gap-3 px-4 py-3.5 font-sans text-sm text-fg hover:bg-surface-2"
+                  >
+                    <span className="flex items-center gap-2">
+                      <TelegramLogo /> Telegram
+                    </span>
+                    <ExternalLink className="size-3.5 text-muted" />
+                  </a>
+                </li>
+                <li className="px-4 py-3.5">
+                  <p className="mb-2 font-sans text-xs uppercase tracking-wider text-muted">
+                    Token CA
+                  </p>
+                  <CopyAddress address={VENT.address} href={VENT.explorerTokenUrl} />
+                </li>
+              </ul>
+              <div className="hidden border border-border bg-surface p-6 lg:block">
+                <p className="mb-4 font-sans text-xs font-medium uppercase tracking-wider text-muted">
+                  Distribution
+                </p>
+                <ul className="flex flex-col gap-3 font-sans text-sm text-fg">
+                  <li className="flex justify-between border-b border-border pb-2">
+                    <span>Liquidity</span>
+                    <strong>{formatCompactTokens(DISTRIBUTION.liquidity)}</strong>
+                  </li>
+                  <li className="flex justify-between border-b border-border pb-2">
+                    <span>Community</span>
+                    <strong>{formatCompactTokens(DISTRIBUTION.community)}</strong>
+                  </li>
+                  <li className="flex justify-between">
+                    <span>NFT holders</span>
+                    <strong>{formatCompactTokens(DISTRIBUTION.nft)}</strong>
+                  </li>
+                </ul>
+                <p className="mt-4 font-sans text-xs text-muted">
+                  No team share · {VENT.chainName}
+                </p>
+              </div>
             </div>
           </section>
 
-          <footer className="flex flex-col gap-4 border-t-2 border-border pt-6 pb-8">
-            <nav className="flex flex-wrap gap-x-6 gap-y-3 font-sans text-lg">
+          {/* Safety */}
+          <section className="border-t border-border py-10">
+            <div className="grid gap-8 sm:grid-cols-2">
+              <div>
+                <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-fg">
+                  <ShieldAlert className="size-4 text-danger" />
+                  Important information
+                </h2>
+                <ul className="flex list-disc flex-col gap-2 pl-5 font-sans text-sm leading-relaxed text-muted">
+                  <li>
+                    Only register / claim at <strong className="text-fg">{CLAIM_DOMAIN}</strong>.
+                    Links in DMs or replies are scams.
+                  </li>
+                  <li>Never share your seed phrase or private key.</li>
+                  <li>
+                    The only fee is{" "}
+                    <strong className="text-fg">
+                      ${registrationFeeUsd} in ETH on Arbitrum
+                    </strong>{" "}
+                    paid as msg.value to VentRegistration. No unlimited approvals.
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h2 className="mb-3 text-base font-semibold text-fg">Official links</h2>
+                <p className="font-sans text-sm leading-relaxed text-muted">
+                  NFT collection:{" "}
+                  <a
+                    href={OPENSEA_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-fg underline underline-offset-4"
+                  >
+                    opensea.io/collection/ventran
+                  </a>
+                  . Website:{" "}
+                  <a
+                    href={WEBSITE_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-fg underline underline-offset-4"
+                  >
+                    ventran.xyz
+                  </a>
+                  .
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Footer — no X / Twitter */}
+          <footer className="flex flex-col gap-4 border-t border-border py-6 pb-10">
+            <nav className="flex flex-wrap gap-x-5 gap-y-2 font-sans text-sm">
               <a
                 href={WEBSITE_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 text-accent underline underline-offset-4"
+                className="text-fg underline underline-offset-4"
               >
-                <ExternalLink className="size-4" /> ventran.xyz
-              </a>
-              <a
-                href={X_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 text-accent underline underline-offset-4"
-              >
-                <XLogo /> @Ventranxyz
+                ventran.xyz
               </a>
               <a
                 href={TELEGRAM_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 text-accent underline underline-offset-4"
+                className="text-fg underline underline-offset-4"
               >
-                <TelegramLogo /> Telegram
+                Telegram
               </a>
               <a
                 href={OPENSEA_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="text-muted underline underline-offset-4 hover:text-fg"
+                className="text-fg underline underline-offset-4"
               >
                 OpenSea
               </a>
-              <Link
-                to="/whitelist"
-                className="text-muted underline underline-offset-4 hover:text-fg"
-              >
-                Ventra NFT whitelist
+              <Link to="/whitelist" className="text-fg underline underline-offset-4">
+                NFT whitelist
               </Link>
             </nav>
-            <p className="font-display text-micro leading-relaxed text-muted sm:text-pixel">
-              ventran@arbitrum: ~/register · ${registrationFeeUsd} ARB fee · claim{" "}
+            <p className="font-sans text-xs text-muted">
+              ${registrationFeeUsd} in ETH on Arbitrum · claim{" "}
               {formatOpensAt(COMMUNITY_OPENS_AT)} · {CLAIM_DOMAIN}
             </p>
           </footer>

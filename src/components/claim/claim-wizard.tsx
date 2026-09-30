@@ -14,11 +14,13 @@ import {
   useConnection,
   useConnectors,
   useDisconnect,
+  useReadContracts,
+  useSignTypedData,
   useSwitchChain,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
-import { type Address, type Hash } from "viem";
+import { type Address, type Hash, type Hex } from "viem";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,15 +48,20 @@ import {
   type NftLookup,
 } from "@/lib/eligibility";
 import {
-  ARB_ERC20_ABI,
-  ARB_TOKEN,
   REGISTRATION,
+  VENT_REGISTRATION_ABI,
   VENTRAN_OPENSEA_URL,
+  buildSetClaimWalletTypedData,
   loadRemap,
   registrationFeeLabel,
-  registrationFeeWei,
   saveRemap,
 } from "@/lib/register";
+import {
+  feeDiffersBeyondTolerance,
+  fetchEthUsd,
+  formatEthExact,
+  usdToEthWei,
+} from "@/lib/eth-price";
 import { OPENSEA_URL } from "@/lib/drop";
 import { TARGET_CHAIN } from "@/lib/wagmi";
 import { cn } from "@/lib/utils";
@@ -80,16 +87,25 @@ function Frame({
   title,
   n,
   children,
+  icon,
 }: {
   title: string;
   n?: string;
   children: React.ReactNode;
+  icon?: React.ReactNode;
 }) {
   return (
-    <section className="border-2 border-accent bg-surface p-5 shadow-pixel sm:p-8">
-      <header className="mb-5 flex items-baseline justify-between gap-4">
-        <h2 className="font-display text-pixel text-fg sm:text-pixel-lg">{title}</h2>
-        {n ? <span className="font-display text-pixel text-muted">{n}</span> : null}
+    <section className="border border-border bg-surface p-5 sm:p-7">
+      <header className="mb-5 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          {icon ?? (
+            <span className="inline-flex size-7 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-fg">
+              V
+            </span>
+          )}
+          <h2 className="text-lg font-semibold text-fg sm:text-xl">{title}</h2>
+        </div>
+        {n ? <span className="font-sans text-xs text-muted">{n}</span> : null}
       </header>
       {children}
     </section>
@@ -99,19 +115,18 @@ function Frame({
 function StepRail({ step }: { step: WizardStep }) {
   const idx = STEPS.findIndex((s) => s.id === step);
   return (
-    <ol className="flex flex-wrap gap-2">
+    <ol className="mb-6 flex flex-wrap gap-2">
       {STEPS.map((s, i) => {
         const active = s.id === step;
         const done = i < idx;
-        // Remap is optional — dim it when skipping visually after allocation→register
         const skipRemap = step !== "remap" && s.id === "remap" && idx > 3;
         return (
           <li
             key={s.id}
             className={cn(
-              "border-2 px-2 py-1 font-display text-micro uppercase",
-              active && "border-accent bg-accent text-fg",
-              done && !active && "border-accent text-accent",
+              "border px-2.5 py-1 font-sans text-xs",
+              active && "border-fg bg-accent text-fg",
+              done && !active && "border-fg text-fg",
               !active && !done && "border-border text-muted",
               skipRemap && "opacity-40",
             )}
@@ -126,30 +141,29 @@ function StepRail({ step }: { step: WizardStep }) {
 
 function DistributionBlurb() {
   return (
-    <div className="flex flex-col gap-3 border-2 border-border bg-bg p-4">
-      <p className="font-display text-micro uppercase text-muted">How distribution works</p>
-      <ul className="flex list-disc flex-col gap-1 pl-5 font-sans text-lg text-fg">
+    <div className="flex flex-col gap-3 border border-border bg-bg p-4">
+      <p className="font-sans text-xs font-medium uppercase tracking-wider text-muted">
+        How distribution works
+      </p>
+      <ul className="flex list-disc flex-col gap-1 pl-5 font-sans text-sm text-fg">
         <li>
-          <strong className="text-accent">{formatCompactTokens(DISTRIBUTION.liquidity)}</strong> VENT
-          liquidity
+          <strong>{formatCompactTokens(DISTRIBUTION.liquidity)}</strong> VENT liquidity
         </li>
         <li>
-          <strong className="text-accent">{formatCompactTokens(DISTRIBUTION.community)}</strong> VENT
-          community airdrop
+          <strong>{formatCompactTokens(DISTRIBUTION.community)}</strong> VENT community airdrop
         </li>
         <li>
-          <strong className="text-accent">{formatCompactTokens(DISTRIBUTION.nft)}</strong> VENT NFT
-          holders
+          <strong>{formatCompactTokens(DISTRIBUTION.nft)}</strong> VENT NFT holders
         </li>
         <li>No team share</li>
       </ul>
-      <p className="font-sans text-base text-muted">
+      <p className="font-sans text-sm text-muted">
         Token CA:{" "}
         <a
           href={VENT.explorerTokenUrl}
           target="_blank"
           rel="noreferrer"
-          className="break-all text-accent underline underline-offset-4"
+          className="break-all text-fg underline underline-offset-4"
         >
           {VENT.address}
         </a>{" "}
@@ -158,7 +172,7 @@ function DistributionBlurb() {
           href={OPENSEA_URL || VENTRAN_OPENSEA_URL}
           target="_blank"
           rel="noreferrer"
-          className="text-accent underline underline-offset-4"
+          className="text-fg underline underline-offset-4"
         >
           OpenSea · Ventran
         </a>
@@ -171,7 +185,7 @@ function DistributionBlurb() {
 function CommunityStatus({ c, demo }: { c: CommunityLookup; demo: boolean }) {
   if (c.status === "not-yet-published") {
     return (
-      <p className="font-sans text-lg text-muted">
+      <p className="font-sans text-sm text-muted">
         Community eligibility list not yet published. Check back when proofs go live
         {demo ? "." : " — or try ?demo=1 to preview the flow."}
       </p>
@@ -180,38 +194,40 @@ function CommunityStatus({ c, demo }: { c: CommunityLookup; demo: boolean }) {
   if (c.status === "eligible") {
     return (
       <div className="flex flex-col gap-1">
-        <p className="font-display text-micro uppercase text-accent">Eligible</p>
-        <p className="font-display text-pixel-lg text-fg">
-          {formatVentExact(c.amountWei)} <span className="text-accent">VENT</span>
+        <p className="font-sans text-xs font-medium uppercase tracking-wider text-fg">Eligible</p>
+        <p className="text-2xl font-semibold text-fg">
+          {formatVentExact(c.amountWei)} <span className="text-base font-medium">VENT</span>
         </p>
-        {c.note ? <p className="font-sans text-base text-muted">{c.note}</p> : null}
+        {c.note ? <p className="font-sans text-sm text-muted">{c.note}</p> : null}
       </div>
     );
   }
   if (c.status === "not-eligible") {
-    return <p className="font-sans text-lg text-fg">Not eligible for the community pool.</p>;
+    return <p className="font-sans text-sm text-fg">Not eligible for the community pool.</p>;
   }
-  return <p className="font-sans text-lg text-danger">{c.message}</p>;
+  return <p className="font-sans text-sm text-danger">{c.message}</p>;
 }
 
 function NftStatus({ n }: { n: NftLookup }) {
   if (n.status === "eligible") {
     return (
       <div className="flex flex-col gap-1">
-        <p className="font-display text-micro uppercase text-accent">Eligible</p>
-        <p className="font-sans text-lg text-fg">{nftAmountCopy(n.tokenCount)}</p>
+        <p className="font-sans text-xs font-medium uppercase tracking-wider text-fg">Eligible</p>
+        <p className="font-sans text-sm text-fg">{nftAmountCopy(n.tokenCount)}</p>
       </div>
     );
   }
   if (n.status === "not-eligible") {
-    return <p className="font-sans text-lg text-fg">Not eligible for the NFT pool.</p>;
+    return <p className="font-sans text-sm text-fg">Not eligible for the NFT pool.</p>;
   }
-  return <p className="font-sans text-lg text-danger">{n.message}</p>;
+  return <p className="font-sans text-sm text-danger">{n.message}</p>;
 }
 
 function hasInjectedProvider(): boolean {
   return typeof window !== "undefined" && Boolean((window as { ethereum?: unknown }).ethereum);
 }
+
+const REMAP_DEADLINE_SECS = 60 * 60; // 1 hour
 
 export function ClaimWizard({ demo = false }: { demo?: boolean }) {
   const mounted = useMounted();
@@ -221,6 +237,7 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
   const connect = useConnect();
   const disconnect = useDisconnect();
   const switchChain = useSwitchChain();
+  const signTyped = useSignTypedData();
 
   const [step, setStep] = useState<WizardStep>("wallet");
   const [pasted, setPasted] = useState("");
@@ -231,6 +248,9 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
   const [destinationWallet, setDestinationWallet] = useState<Address | null>(null);
   const [demoTxHash, setDemoTxHash] = useState<Hash | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [pendingPhase, setPendingPhase] = useState<"idle" | "remap-sign" | "remap-tx" | "register">(
+    "idle",
+  );
 
   const injectedAvailable = mounted && hasInjectedProvider();
   const visibleConnectors = useMemo(() => {
@@ -245,13 +265,146 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
   const eligibilityQuery = useQuery({
     queryKey: ["vent-eligibility", eligibleWallet, demo],
     queryFn: () => lookupBoth(eligibleWallet!, { demo }),
-    enabled: Boolean(eligibleWallet) && (step === "eligibility" || step === "allocation" || step === "remap" || step === "register" || step === "done"),
+    enabled:
+      Boolean(eligibleWallet) &&
+      (step === "eligibility" ||
+        step === "allocation" ||
+        step === "remap" ||
+        step === "register" ||
+        step === "done"),
     staleTime: 5 * 60_000,
   });
 
   const result = eligibilityQuery.data as CombinedEligibility | undefined;
 
-  // Restore remap from localStorage when eligible wallet is set
+  const priceQuery = useQuery({
+    queryKey: ["eth-usd"],
+    queryFn: fetchEthUsd,
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+    enabled: step === "register" || step === "done" || step === "allocation",
+  });
+
+  const contract = REGISTRATION.contract;
+  const contractSet = REGISTRATION.contractSet && contract !== null;
+
+  const onChainGlobal = useReadContracts({
+    contracts: [
+      {
+        address: contract ?? "0x0000000000000000000000000000000000000000",
+        abi: VENT_REGISTRATION_ABI,
+        functionName: "registrationFee",
+        chainId: TARGET_CHAIN.id,
+      },
+      {
+        address: contract ?? "0x0000000000000000000000000000000000000000",
+        abi: VENT_REGISTRATION_ABI,
+        functionName: "feeRecipient",
+        chainId: TARGET_CHAIN.id,
+      },
+      {
+        address: contract ?? "0x0000000000000000000000000000000000000000",
+        abi: VENT_REGISTRATION_ABI,
+        functionName: "registrationOpen",
+        chainId: TARGET_CHAIN.id,
+      },
+      {
+        address: contract ?? "0x0000000000000000000000000000000000000000",
+        abi: VENT_REGISTRATION_ABI,
+        functionName: "paused",
+        chainId: TARGET_CHAIN.id,
+      },
+    ] as const,
+    query: { enabled: contractSet, staleTime: 30_000 },
+  });
+
+  const eligibleForReads = eligibleWallet ?? ("0x0000000000000000000000000000000000000000" as Address);
+  const onChainEligible = useReadContracts({
+    contracts: [
+      {
+        address: contract ?? "0x0000000000000000000000000000000000000000",
+        abi: VENT_REGISTRATION_ABI,
+        functionName: "isRegistered",
+        args: [eligibleForReads],
+        chainId: TARGET_CHAIN.id,
+      },
+      {
+        address: contract ?? "0x0000000000000000000000000000000000000000",
+        abi: VENT_REGISTRATION_ABI,
+        functionName: "effectiveClaimWallet",
+        args: [eligibleForReads],
+        chainId: TARGET_CHAIN.id,
+      },
+      {
+        address: contract ?? "0x0000000000000000000000000000000000000000",
+        abi: VENT_REGISTRATION_ABI,
+        functionName: "nonces",
+        args: [eligibleForReads],
+        chainId: TARGET_CHAIN.id,
+      },
+      {
+        address: contract ?? "0x0000000000000000000000000000000000000000",
+        abi: VENT_REGISTRATION_ABI,
+        functionName: "remapped",
+        args: [eligibleForReads],
+        chainId: TARGET_CHAIN.id,
+      },
+    ] as const,
+    query: { enabled: contractSet && Boolean(eligibleWallet), staleTime: 30_000 },
+  });
+
+  const onChainFee =
+    onChainGlobal.data?.[0]?.status === "success"
+      ? (onChainGlobal.data[0].result as bigint)
+      : null;
+  const onChainFeeRecipient =
+    onChainGlobal.data?.[1]?.status === "success"
+      ? (onChainGlobal.data[1].result as Address)
+      : null;
+  const registrationOpen =
+    onChainGlobal.data?.[2]?.status === "success"
+      ? Boolean(onChainGlobal.data[2].result)
+      : null;
+  const paused =
+    onChainGlobal.data?.[3]?.status === "success"
+      ? Boolean(onChainGlobal.data[3].result)
+      : null;
+  const alreadyRegistered =
+    eligibleWallet && onChainEligible.data?.[0]?.status === "success"
+      ? Boolean(onChainEligible.data[0].result)
+      : null;
+  const effectiveClaim =
+    eligibleWallet && onChainEligible.data?.[1]?.status === "success"
+      ? (onChainEligible.data[1].result as Address)
+      : null;
+  const onChainNonce =
+    eligibleWallet && onChainEligible.data?.[2]?.status === "success"
+      ? (onChainEligible.data[2].result as bigint)
+      : null;
+  const alreadyRemapped =
+    eligibleWallet && onChainEligible.data?.[3]?.status === "success"
+      ? Boolean(onChainEligible.data[3].result)
+      : null;
+
+  const quoteWei = useMemo(() => {
+    if (!priceQuery.data?.usd) return null;
+    try {
+      return usdToEthWei(REGISTRATION.feeUsd, priceQuery.data.usd);
+    } catch {
+      return null;
+    }
+  }, [priceQuery.data?.usd]);
+
+  /** Amount to send: prefer on-chain fee when set; else live quote. */
+  const payWei = onChainFee ?? quoteWei;
+
+  const feeMismatch =
+    contractSet &&
+    onChainFee !== null &&
+    quoteWei !== null &&
+    feeDiffersBeyondTolerance(quoteWei, onChainFee, REGISTRATION.feeTolerance);
+
+  // Restore remap from localStorage (UX cache only)
   useEffect(() => {
     if (!eligibleWallet) return;
     const existing = loadRemap(eligibleWallet);
@@ -261,7 +414,9 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
     }
   }, [eligibleWallet]);
 
-  const registerAs = destinationWallet ?? eligibleWallet;
+  // Prefer on-chain effective claim wallet when available
+  const registerAs: Address | null =
+    (effectiveClaim as Address | null) ?? destinationWallet ?? eligibleWallet;
 
   const write = useWriteContract();
   const receipt = useWaitForTransactionReceipt({
@@ -272,20 +427,26 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
 
   useEffect(() => {
     if (receipt.data?.status === "success") {
-      setStep("done");
+      if (pendingPhase === "remap-tx") {
+        setPendingPhase("idle");
+        setStep("register");
+        void onChainGlobal.refetch();
+        void onChainEligible.refetch();
+      } else if (pendingPhase === "register" || pendingPhase === "idle") {
+        setPendingPhase("idle");
+        setStep("done");
+      }
     }
-  }, [receipt.data?.status]);
+  }, [receipt.data?.status, pendingPhase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const goCheck = useCallback(
-    (wallet: Address) => {
-      setEligibleWallet(wallet);
-      setStep("eligibility");
-      setCompromised(null);
-      setDemoTxHash(null);
-      setRegisterError(null);
-    },
-    [],
-  );
+  const goCheck = useCallback((wallet: Address) => {
+    setEligibleWallet(wallet);
+    setStep("eligibility");
+    setCompromised(null);
+    setDemoTxHash(null);
+    setRegisterError(null);
+    setPendingPhase("idle");
+  }, []);
 
   function onUseConnected() {
     if (!address) return;
@@ -294,10 +455,7 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
 
   function onPasteCheck() {
     const parsed = parseListedAddress(pasted);
-    if (!parsed) {
-      setRemapError(null);
-      return;
-    }
+    if (!parsed) return;
     goCheck(parsed);
   }
 
@@ -312,7 +470,8 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
     }
   }
 
-  function onSaveRemap() {
+  async function onSaveRemap() {
+    setRemapError(null);
     const parsed = parseListedAddress(remapInput);
     if (!parsed) {
       setRemapError("Enter a valid EVM address (0x…).");
@@ -323,25 +482,39 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
       return;
     }
     if (!eligibleWallet) return;
+
+    // Always cache for UX
     saveRemap(eligibleWallet, parsed);
     setDestinationWallet(parsed);
-    setRemapError(null);
-    setStep("register");
-  }
 
-  function onPayRegister() {
-    setRegisterError(null);
-    if (!REGISTRATION.walletSet) {
-      setRegisterError("Registration wallet not set yet — waiting on team.");
+    // Without contract: local cache only (demo / pre-deploy)
+    if (!contractSet || !contract) {
+      if (demo) {
+        setStep("register");
+        return;
+      }
+      setRemapError(
+        "Registration contract not deployed yet — remap saved locally. On-chain remap will run once the contract address is set.",
+      );
+      setStep("register");
+      return;
+    }
+
+    if (alreadyRemapped) {
+      setRemapError("This eligible wallet was already remapped on-chain.");
+      return;
+    }
+    if (alreadyRegistered) {
+      setRemapError("Already registered — remap is only allowed before register.");
       return;
     }
     if (!isConnected || !address) {
-      setRegisterError("Connect the wallet that will be written on-chain.");
+      setRemapError("Connect the eligible wallet to sign the remap.");
       return;
     }
-    if (registerAs && address.toLowerCase() !== registerAs.toLowerCase()) {
-      setRegisterError(
-        `Connect ${shortAddress(registerAs)} — that is the wallet that will be registered.`,
+    if (address.toLowerCase() !== eligibleWallet.toLowerCase()) {
+      setRemapError(
+        `Connect ${shortAddress(eligibleWallet)} — the eligible wallet must sign EIP-712.`,
       );
       return;
     }
@@ -349,24 +522,109 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
       switchChain.mutate({ chainId: TARGET_CHAIN.id });
       return;
     }
-    // Direct ARB ERC-20 transfer — never approve unlimited VENT.
+    if (onChainNonce === null) {
+      setRemapError("Could not read on-chain nonce — try again.");
+      return;
+    }
+
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + REMAP_DEADLINE_SECS);
+    const typed = buildSetClaimWalletTypedData({
+      verifyingContract: contract,
+      chainId: TARGET_CHAIN.id,
+      eligible: eligibleWallet,
+      newClaimWallet: parsed,
+      nonce: onChainNonce,
+      deadline,
+    });
+
+    try {
+      setPendingPhase("remap-sign");
+      const signature = (await signTyped.mutateAsync({
+        ...typed,
+      })) as Hex;
+      setPendingPhase("remap-tx");
+      write.mutate({
+        address: contract,
+        abi: VENT_REGISTRATION_ABI,
+        functionName: "setClaimWallet",
+        args: [eligibleWallet, parsed, deadline, signature],
+        chainId: TARGET_CHAIN.id,
+      });
+    } catch (err) {
+      setPendingPhase("idle");
+      if (isUserRejection(err)) {
+        setRemapError("Signature rejected in wallet.");
+      } else {
+        setRemapError(err instanceof Error ? err.message : "Remap failed.");
+      }
+    }
+  }
+
+  function onPayRegister() {
+    setRegisterError(null);
+    if (!contractSet || !contract) {
+      setRegisterError("Registration contract not set yet — waiting on deploy.");
+      return;
+    }
+    if (!isConnected || !address) {
+      setRegisterError("Connect the wallet that will be written on-chain (claim wallet).");
+      return;
+    }
+    if (registerAs && address.toLowerCase() !== registerAs.toLowerCase()) {
+      setRegisterError(
+        `Connect ${shortAddress(registerAs)} — that is the effective claim wallet.`,
+      );
+      return;
+    }
+    if (!eligibleWallet) {
+      setRegisterError("Missing eligible wallet.");
+      return;
+    }
+    if (alreadyRegistered) {
+      setRegisterError("Already registered on-chain.");
+      return;
+    }
+    if (paused) {
+      setRegisterError("Registration is paused.");
+      return;
+    }
+    if (registrationOpen === false) {
+      setRegisterError("Registration is not open yet.");
+      return;
+    }
+    if (feeMismatch) {
+      setRegisterError(
+        `On-chain fee is ${formatEthExact(onChainFee!)} ETH; live $1 quote is ${formatEthExact(quoteWei!)} ETH (>${REGISTRATION.feeTolerance * 100}% drift). Refresh or wait for owner update.`,
+      );
+      return;
+    }
+    if (payWei === null) {
+      setRegisterError("Could not determine fee amount — wait for price / on-chain fee.");
+      return;
+    }
+    if (chainId !== TARGET_CHAIN.id) {
+      switchChain.mutate({ chainId: TARGET_CHAIN.id });
+      return;
+    }
+
+    // Native ETH msg.value — never ARB approve/transfer
+    setPendingPhase("register");
     write.mutate({
-      address: ARB_TOKEN.address,
-      abi: ARB_ERC20_ABI,
-      functionName: "transfer",
-      args: [REGISTRATION.wallet, registrationFeeWei()],
+      address: contract,
+      abi: VENT_REGISTRATION_ABI,
+      functionName: "register",
+      args: [eligibleWallet],
+      value: payWei,
       chainId: TARGET_CHAIN.id,
     });
   }
 
   function onDemoRegister() {
-    // Simulated success for demos when registration wallet is not set.
     const fake = ("0x" + "ab".repeat(32)) as Hash;
     setDemoTxHash(fake);
     setStep("done");
   }
 
-  // Auto-advance eligibility → allocation once loaded
   useEffect(() => {
     if (step === "eligibility" && eligibilityQuery.isSuccess && result) {
       setStep("allocation");
@@ -374,28 +632,29 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
   }, [step, eligibilityQuery.isSuccess, result]);
 
   const wrongNetwork = isConnected && chainId !== TARGET_CHAIN.id;
-  const feeLabel = registrationFeeLabel();
+  const feeLabel = registrationFeeLabel(payWei, priceQuery.data?.usd ?? null);
+  const displayFeeRecipient = onChainFeeRecipient ?? REGISTRATION.feeRecipient;
 
   return (
     <div className="flex flex-col gap-6">
       <StepRail step={step} />
 
       {step === "wallet" ? (
-        <Frame title="ELIGIBILITY WALLET" n="01">
+        <Frame title="Eligibility wallet" n="01">
           <div className="flex flex-col gap-5">
-            <p className="font-sans text-lg text-muted">
+            <p className="font-sans text-sm text-muted sm:text-base">
               Enter or connect the wallet used for eligibility (waitlist / NFT holder). Checking is
               free and never asks for a signature.
             </p>
 
             {mounted && isConnected && address ? (
-              <div className="flex flex-col gap-3 border-2 border-border bg-bg p-4">
+              <div className="flex flex-col gap-3 border border-border bg-bg p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <Wallet className="size-5 text-accent" />
+                    <Wallet className="size-5 text-fg" />
                     <div>
-                      <p className="font-display text-pixel text-fg">{shortAddress(address)}</p>
-                      <p className="font-sans text-base text-muted">
+                      <p className="font-semibold text-fg">{shortAddress(address)}</p>
+                      <p className="font-sans text-sm text-muted">
                         {connector?.type === "mock"
                           ? "Demo wallet (mock)"
                           : (connector?.name ?? "Wallet")}{" "}
@@ -423,7 +682,9 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
               </div>
             ) : mounted ? (
               <div className="flex flex-col gap-3">
-                <p className="font-display text-micro uppercase text-muted">Connect</p>
+                <p className="font-sans text-xs font-medium uppercase tracking-wider text-muted">
+                  Connect
+                </p>
                 <div className="flex flex-wrap gap-3">
                   {visibleConnectors.map((c) => (
                     <Button
@@ -442,7 +703,7 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                   ))}
                 </div>
                 {connect.error ? (
-                  <p className="font-sans text-base text-danger">
+                  <p className="font-sans text-sm text-danger">
                     {isUserRejection(connect.error)
                       ? "Request rejected in wallet."
                       : "Couldn't connect. Unlock your wallet and try again."}
@@ -450,11 +711,13 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                 ) : null}
               </div>
             ) : (
-              <p className="font-sans text-lg text-muted">Loading wallet…</p>
+              <p className="font-sans text-sm text-muted">Loading wallet…</p>
             )}
 
             <div className="flex flex-col gap-3">
-              <p className="font-display text-micro uppercase text-muted">Or paste an address</p>
+              <p className="font-sans text-xs font-medium uppercase tracking-wider text-muted">
+                Or paste an address
+              </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Input
                   placeholder="0x…"
@@ -477,22 +740,22 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
       ) : null}
 
       {step === "eligibility" ? (
-        <Frame title="CHECKING ELIGIBILITY" n="02">
+        <Frame title="Checking eligibility" n="02">
           <div className="flex flex-col gap-4">
-            <p className="font-sans text-lg text-muted">
+            <p className="font-sans text-sm text-muted">
               Looking up{" "}
-              <span className="font-display text-pixel text-fg">
+              <span className="font-semibold text-fg">
                 {eligibleWallet ? shortAddress(eligibleWallet) : "…"}
               </span>{" "}
               against community + NFT lists…
             </p>
             {eligibilityQuery.isPending || eligibilityQuery.isFetching ? (
-              <p className="flex items-center gap-2 font-sans text-lg text-muted">
+              <p className="flex items-center gap-2 font-sans text-sm text-muted">
                 <Loader2 className="size-4 animate-spin" /> Checking…
               </p>
             ) : eligibilityQuery.isError ? (
               <div className="flex flex-col gap-3">
-                <p className="font-sans text-lg text-danger">Couldn&apos;t load eligibility.</p>
+                <p className="font-sans text-sm text-danger">Couldn&apos;t load eligibility.</p>
                 <Button variant="secondary" onClick={() => void eligibilityQuery.refetch()}>
                   Retry
                 </Button>
@@ -506,24 +769,22 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
       ) : null}
 
       {step === "allocation" && result ? (
-        <Frame title="YOUR ALLOCATION" n="03">
+        <Frame title="Your allocation" n="03">
           <div className="flex flex-col gap-5">
-            <p className="font-sans text-lg text-muted">
+            <p className="font-sans text-sm text-muted">
               Results for{" "}
-              <span className="font-display text-pixel text-fg">
-                {shortAddress(result.address)}
-              </span>
+              <span className="font-semibold text-fg">{shortAddress(result.address)}</span>
             </p>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="border-2 border-border bg-bg p-4">
-                <p className="mb-2 font-display text-micro uppercase text-muted">
+              <div className="border border-border bg-bg p-4">
+                <p className="mb-2 font-sans text-xs font-medium uppercase tracking-wider text-muted">
                   Community · {formatCompactTokens(DISTRIBUTION.community)} VENT
                 </p>
                 <CommunityStatus c={result.community} demo={demo} />
               </div>
-              <div className="border-2 border-border bg-bg p-4">
-                <p className="mb-2 font-display text-micro uppercase text-muted">
+              <div className="border border-border bg-bg p-4">
+                <p className="mb-2 font-sans text-xs font-medium uppercase tracking-wider text-muted">
                   NFT holders · {formatCompactTokens(DISTRIBUTION.nft)} VENT
                 </p>
                 <NftStatus n={result.nft} />
@@ -532,13 +793,13 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
 
             <DistributionBlurb />
 
-            <div className="flex flex-col gap-3 border-2 border-accent bg-bg p-4">
-              <p className="font-display text-micro uppercase text-accent">
+            <div className="flex flex-col gap-3 border border-border bg-bg p-4">
+              <p className="font-sans text-xs font-medium uppercase tracking-wider text-fg">
                 Is this eligibility wallet compromised?
               </p>
-              <p className="font-sans text-base text-muted">
-                If the wallet is unsafe, you can remap once to a new destination wallet. Remap is
-                one-time — we never ask for unlimited approvals.
+              <p className="font-sans text-sm text-muted">
+                If the wallet is unsafe, you can remap once to a new claim wallet via EIP-712
+                (eligible signs). Remap is one-time — we never ask for unlimited approvals.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button
@@ -569,18 +830,29 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
       ) : null}
 
       {step === "remap" ? (
-        <Frame title="REMAP DESTINATION" n="04">
+        <Frame
+          title="Remap claim wallet"
+          n="04"
+          icon={
+            <span className="inline-flex size-7 items-center justify-center rounded-full bg-fg text-[11px] font-bold text-bg">
+              R
+            </span>
+          }
+        >
           <div className="flex flex-col gap-5">
-            <div className="flex items-start gap-3 border-2 border-danger bg-bg p-4">
-              <ShieldAlert className="mt-1 size-5 shrink-0 text-danger" />
+            <div className="flex items-start gap-3 border border-danger bg-[#fdf6f6] p-4">
+              <ShieldAlert className="mt-0.5 size-5 shrink-0 text-danger" />
               <div className="flex flex-col gap-2">
-                <p className="font-display text-micro uppercase text-danger">One-time remap</p>
-                <p className="font-sans text-lg text-fg">
-                  Submit a <strong>new</strong> destination wallet. This mapping is stored
-                  locally for now and prepared for on-chain register of the new wallet. You will
-                  connect and pay the registration fee from that new wallet.
+                <p className="font-sans text-xs font-medium uppercase tracking-wider text-danger">
+                  One-time on-chain remap
                 </p>
-                <p className="font-sans text-base text-muted">
+                <p className="font-sans text-sm text-fg">
+                  Submit a <strong>new</strong> claim wallet. The <strong>eligible</strong> wallet
+                  signs EIP-712 <code className="text-xs">SetClaimWallet</code>, then{" "}
+                  <code className="text-xs">setClaimWallet</code> is submitted on-chain. After
+                  remap, the new wallet pays the registration fee.
+                </p>
+                <p className="font-sans text-sm text-muted">
                   Eligible wallet:{" "}
                   <span className="text-fg">
                     {eligibleWallet ? shortAddress(eligibleWallet) : "—"}
@@ -589,8 +861,8 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <label className="font-display text-micro uppercase text-muted" htmlFor="remap-addr">
-                New destination wallet
+              <label className="font-sans text-xs font-medium uppercase tracking-wider text-muted" htmlFor="remap-addr">
+                New claim wallet
               </label>
               <Input
                 id="remap-addr"
@@ -603,64 +875,125 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                 spellCheck={false}
                 autoComplete="off"
               />
-              {remapError ? <p className="font-sans text-base text-danger">{remapError}</p> : null}
+              {remapError ? <p className="font-sans text-sm text-danger">{remapError}</p> : null}
             </div>
             <div className="flex flex-wrap gap-3">
               <Button variant="ghost" onClick={() => setStep("allocation")}>
                 <ArrowLeft className="size-4" /> Back
               </Button>
-              <Button onClick={onSaveRemap}>Save remap &amp; continue</Button>
+              <Button
+                disabled={pendingPhase === "remap-sign" || pendingPhase === "remap-tx" || write.isPending}
+                onClick={() => void onSaveRemap()}
+              >
+                {pendingPhase === "remap-sign"
+                  ? "Sign in wallet…"
+                  : pendingPhase === "remap-tx" || write.isPending
+                    ? "Submitting remap…"
+                    : contractSet
+                      ? "Sign & submit remap"
+                      : "Save remap & continue"}
+              </Button>
             </div>
           </div>
         </Frame>
       ) : null}
 
       {step === "register" ? (
-        <Frame title="REGISTER" n="05">
+        <Frame title="Register" n="05">
           <div className="flex flex-col gap-5">
-            <div className="border-2 border-accent bg-bg p-4">
-              <p className="mb-2 font-display text-micro uppercase text-accent">
-                Registration fee: ${REGISTRATION.feeUsd} in ARB
+            {contractSet && registrationOpen === false ? (
+              <div className="border border-[#e8d48b] bg-[#fbf6e6] px-4 py-3 font-sans text-sm text-fg">
+                Registration is not open yet. You can check eligibility and prepare a remap; the
+                pay button stays disabled until the owner opens registration on-chain.
+              </div>
+            ) : null}
+            {contractSet && paused === true ? (
+              <div className="border border-danger bg-[#fdecea] px-4 py-3 font-sans text-sm text-danger">
+                Registration is paused on-chain.
+              </div>
+            ) : null}
+            <div className="border border-border bg-bg p-4">
+              <p className="mb-2 font-sans text-xs font-medium uppercase tracking-wider text-fg">
+                Registration fee: ${REGISTRATION.feeUsd} in ETH on Arbitrum
               </p>
-              <p className="font-sans text-lg text-fg">
-                Pay <strong>{feeLabel}</strong> on {VENT.chainName}. Fee is in the{" "}
-                <strong>ARB ERC-20</strong> token (
-                <a
-                  href={ARB_TOKEN.explorerTokenUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-accent underline underline-offset-4"
-                >
-                  {shortAddress(ARB_TOKEN.address)}
-                </a>
-                ), not ETH. Direct transfer only — no unlimited approvals, no VENT approval.
+              <p className="font-sans text-sm text-fg">
+                Pay <strong>{feeLabel}</strong> as native ETH (<code className="text-xs">msg.value</code>)
+                on {VENT.chainName}. Not the ARB token — no approve, no ERC-20 transfer.
               </p>
+              {priceQuery.data ? (
+                <p className="mt-2 font-sans text-xs text-muted">
+                  ETH/USD ≈ ${priceQuery.data.usd.toLocaleString("en-US", { maximumFractionDigits: 2 })}
+                  {priceQuery.data.stale ? " (stale price — refresh soon)" : ""} · via{" "}
+                  {priceQuery.data.source}
+                  {payWei !== null ? ` · ${formatEthExact(payWei)} ETH` : ""}
+                </p>
+              ) : priceQuery.isError ? (
+                <p className="mt-2 font-sans text-xs text-danger">
+                  Could not fetch ETH/USD — try again.
+                </p>
+              ) : (
+                <p className="mt-2 font-sans text-xs text-muted">Fetching live ETH price…</p>
+              )}
+              {feeMismatch ? (
+                <p className="mt-2 flex items-start gap-2 font-sans text-sm text-danger">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                  On-chain fee is {formatEthExact(onChainFee!)} ETH; live $1 quote is{" "}
+                  {formatEthExact(quoteWei!)} ETH. Refresh or wait for owner update — submit
+                  blocked.
+                </p>
+              ) : null}
             </div>
 
-            <dl className="grid gap-3 font-sans text-base">
+            <dl className="grid gap-3 font-sans text-sm">
               <div>
-                <dt className="font-display text-micro uppercase text-muted">Eligible wallet</dt>
-                <dd className="text-fg">
-                  {eligibleWallet ? shortAddress(eligibleWallet) : "—"}
-                </dd>
+                <dt className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Eligible wallet
+                </dt>
+                <dd className="text-fg">{eligibleWallet ? shortAddress(eligibleWallet) : "—"}</dd>
               </div>
               <div>
-                <dt className="font-display text-micro uppercase text-muted">
-                  Wallet written on-chain
+                <dt className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Claim wallet (pays fee)
                 </dt>
                 <dd className="text-fg">
                   {registerAs ? shortAddress(registerAs) : "—"}
-                  {destinationWallet ? " (remapped)" : ""}
+                  {destinationWallet || (effectiveClaim && eligibleWallet && effectiveClaim.toLowerCase() !== eligibleWallet.toLowerCase())
+                    ? " (remapped)"
+                    : ""}
                 </dd>
               </div>
               <div>
-                <dt className="font-display text-micro uppercase text-muted">Registration wallet</dt>
+                <dt className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Fee recipient
+                </dt>
                 <dd className="break-all text-fg">
-                  {REGISTRATION.walletSet ? (
-                    REGISTRATION.wallet
+                  {REGISTRATION.feeRecipientSet ? (
+                    <a
+                      href={VENT.explorerAddressUrl(displayFeeRecipient)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline underline-offset-4"
+                    >
+                      {displayFeeRecipient}
+                    </a>
+                  ) : (
+                    <span className="text-danger">Not set</span>
+                  )}
+                  <span className="mt-1 block text-xs text-muted">
+                    ~$1 ETH goes here via VentRegistration (not a bare transfer).
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Registration contract
+                </dt>
+                <dd className="break-all text-fg">
+                  {contractSet && contract ? (
+                    contract
                   ) : (
                     <span className="text-danger">
-                      Not set yet — waiting on team (placeholder {shortAddress(REGISTRATION.wallet)})
+                      Not deployed yet — pay disabled until Clanker sets the address
                     </span>
                   )}
                 </dd>
@@ -668,15 +1001,17 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
             </dl>
 
             {mounted && isConnected && address ? (
-              <div className="border-2 border-border bg-bg p-4">
-                <p className="font-sans text-lg text-fg">
-                  Connected: <span className="font-display text-pixel">{shortAddress(address)}</span>
+              <div className="border border-border bg-bg p-4">
+                <p className="font-sans text-sm text-fg">
+                  Connected: <span className="font-semibold">{shortAddress(address)}</span>
                   {registerAs && address.toLowerCase() !== registerAs.toLowerCase() ? (
                     <span className="mt-2 block text-danger">
                       Switch to {shortAddress(registerAs)} to register.
                     </span>
                   ) : (
-                    <span className="mt-2 block text-muted">Ready to pay the registration fee.</span>
+                    <span className="mt-2 block text-muted">
+                      Ready to pay the registration fee in ETH.
+                    </span>
                   )}
                 </p>
                 <Button variant="ghost" className="mt-2" onClick={() => disconnect.mutate()}>
@@ -685,8 +1020,8 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
               </div>
             ) : mounted ? (
               <div className="flex flex-col gap-3">
-                <p className="font-sans text-lg text-muted">
-                  Connect the wallet that will be written on-chain
+                <p className="font-sans text-sm text-muted">
+                  Connect the claim wallet that will be written on-chain
                   {registerAs ? ` (${shortAddress(registerAs)})` : ""}.
                 </p>
                 <div className="flex flex-wrap gap-3">
@@ -720,22 +1055,33 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
               </Button>
               <Button
                 disabled={
-                  !REGISTRATION.walletSet ||
+                  !contractSet ||
                   write.isPending ||
                   receipt.isLoading ||
-                  !isConnected
+                  !isConnected ||
+                  feeMismatch ||
+                  payWei === null ||
+                  Boolean(alreadyRegistered) ||
+                  registrationOpen === false ||
+                  paused === true
                 }
                 onClick={onPayRegister}
               >
-                {!REGISTRATION.walletSet
-                  ? "Registration wallet not set yet"
-                  : write.isPending
-                    ? "Confirm in wallet…"
-                    : receipt.isLoading
-                      ? "Confirming…"
-                      : `Pay $${REGISTRATION.feeUsd} in ARB`}
+                {!contractSet
+                  ? "Contract not set yet"
+                  : alreadyRegistered
+                    ? "Already registered"
+                    : paused === true
+                      ? "Registration paused"
+                      : registrationOpen === false
+                        ? "Registration not open yet"
+                        : write.isPending || pendingPhase === "register"
+                          ? "Confirm in wallet…"
+                          : receipt.isLoading
+                            ? "Confirming…"
+                            : `Pay $${REGISTRATION.feeUsd} in ETH`}
               </Button>
-              {demo && !REGISTRATION.walletSet ? (
+              {demo && !contractSet ? (
                 <Button variant="secondary" onClick={onDemoRegister}>
                   Demo: simulate register
                 </Button>
@@ -743,15 +1089,15 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
             </div>
 
             {registerError ? (
-              <p className="flex items-start gap-2 font-sans text-base text-danger">
-                <AlertTriangle className="mt-1 size-4 shrink-0" /> {registerError}
+              <p className="flex items-start gap-2 font-sans text-sm text-danger">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {registerError}
               </p>
             ) : null}
-            {write.error ? (
-              <p className="font-sans text-base text-danger">
+            {write.error && pendingPhase === "register" ? (
+              <p className="font-sans text-sm text-danger">
                 {isUserRejection(write.error)
                   ? "Transaction rejected in wallet."
-                  : "Transfer failed. You need ARB token balance plus a little ETH for gas."}
+                  : "Register failed. You need enough ETH for the fee plus gas."}
               </p>
             ) : null}
             {write.data ? (
@@ -759,7 +1105,7 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                 href={VENT.explorerTxUrl(write.data)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 font-sans text-base text-accent underline underline-offset-4"
+                className="inline-flex items-center gap-2 font-sans text-sm text-fg underline underline-offset-4"
               >
                 View transaction <ExternalLink className="size-4" />
               </a>
@@ -769,24 +1115,24 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
       ) : null}
 
       {step === "done" ? (
-        <Frame title="REGISTERED · CLAIM SOON" n="06">
+        <Frame title="Registered · claim soon" n="06">
           <div className="flex flex-col gap-5">
-            <p className="flex items-center gap-2 font-display text-pixel text-accent">
+            <p className="flex items-center gap-2 text-base font-semibold text-fg">
               <CheckCircle2 className="size-5" /> Registration recorded
             </p>
-            <p className="font-sans text-lg text-muted">
+            <p className="font-sans text-sm text-muted">
               Claims open {formatOpensAt(COMMUNITY_OPENS_AT)}. The claim button stays disabled until
               then — registration is the gate for now.
             </p>
             {(write.data || demoTxHash) && (
-              <p className="font-sans text-base text-muted">
+              <p className="font-sans text-sm text-muted">
                 Tx:{" "}
                 {write.data ? (
                   <a
                     href={VENT.explorerTxUrl(write.data)}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-accent underline underline-offset-4"
+                    className="text-fg underline underline-offset-4"
                   >
                     {shortAddress(write.data)}
                   </a>
@@ -796,14 +1142,16 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
               </p>
             )}
             <div className="flex flex-col gap-2">
-              <p className="font-display text-micro uppercase text-muted">Countdown to claim</p>
+              <p className="font-sans text-xs font-medium uppercase tracking-wider text-muted">
+                Countdown to claim
+              </p>
               <ClaimCountdown target={COMMUNITY_OPENS_AT} now={now} />
             </div>
             <Button disabled>Claim opens {formatOpensAt(COMMUNITY_OPENS_AT)}</Button>
             <SafetyLine />
-            <p className="font-sans text-base text-muted">
-              Official domain only: <strong className="text-accent">{CLAIM_DOMAIN}</strong>. Never
-              share your seed phrase.
+            <p className="font-sans text-sm text-muted">
+              Official domain only: <strong className="text-fg">{CLAIM_DOMAIN}</strong>. Never share
+              your seed phrase.
             </p>
             <Button variant="ghost" className="w-fit" onClick={() => setStep("wallet")}>
               Start over
