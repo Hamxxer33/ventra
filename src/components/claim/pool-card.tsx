@@ -345,8 +345,8 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
           </a>
         ) : null}
         <p className="font-sans text-base text-muted">
-          Claiming is a normal transaction: your wallet pays its own gas (a little ETH on{" "}
-          {VENT.chainName}).
+          When claims open, this is one transaction on {VENT.chainName}. Registration is a separate
+          step on this site. We never ask for seed phrases.
         </p>
         <SafetyLine />
       </div>

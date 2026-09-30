@@ -1,5 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
-import { BellLogo, RepostLogo, TelegramLogo, XLogo } from "@/components/pixel-logo";
+import { BellLogo, RepostLogo, TelegramLogo } from "@/components/pixel-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,6 @@ import {
 } from "@/lib/ticket";
 import { cn } from "@/lib/utils";
 
-const FOLLOWED_KEY = "ventra.followedX";
 const NOTIFY_KEY = "ventra.notifyX";
 const REPOST_KEY = "ventra.repostedDrop2";
 const JOINED_KEY = "ventra.joinedTg";
@@ -97,7 +96,6 @@ export function WhitelistForm({
 }) {
   const [handle, setHandle] = useState(profile?.handle ?? "");
   const [wallet, setWallet] = useState(profile?.wallet ?? "");
-  const [followed, setFollowed] = useState(false);
   const [notified, setNotified] = useState(false);
   const [reposted, setReposted] = useState(false);
   const [joined, setJoined] = useState(false);
@@ -105,14 +103,13 @@ export function WhitelistForm({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setFollowed(readFlag(FOLLOWED_KEY));
     setNotified(readFlag(NOTIFY_KEY));
     setReposted(readFlag(REPOST_KEY));
     setJoined(readFlag(JOINED_KEY));
   }, []);
 
-  const doneCount = [followed, notified, reposted, joined].filter(Boolean).length;
-  const tasksDone = doneCount === 4;
+  const doneCount = [notified, reposted, joined].filter(Boolean).length;
+  const tasksDone = doneCount === 3;
 
   if (profile) {
     return (
@@ -131,10 +128,6 @@ export function WhitelistForm({
     );
   }
 
-  function markFollowed() {
-    writeFlag(FOLLOWED_KEY);
-    setFollowed(true);
-  }
 
   function markNotified() {
     writeFlag(NOTIFY_KEY);
@@ -153,8 +146,8 @@ export function WhitelistForm({
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!followed || !notified || !reposted || !joined) {
-      setError("Finish all four tasks first.");
+    if (!notified || !reposted || !joined) {
+      setError("Finish all three tasks first.");
       return;
     }
     const h = normalizeHandle(handle);
@@ -184,21 +177,12 @@ export function WhitelistForm({
         <div className="flex items-baseline justify-between gap-3">
           <p className="font-display text-pixel text-muted">Do this first</p>
           <p className={cn("font-display text-micro", tasksDone ? "text-accent" : "text-muted")}>
-            {doneCount}/4
+            {doneCount}/3
           </p>
         </div>
         <div className="flex flex-col gap-2">
           <TaskRow
             n="01"
-            href={X_URL}
-            done={followed}
-            onOpen={markFollowed}
-            icon={<XLogo />}
-            label="Follow @Ventranxyz"
-            doneLabel="Followed @Ventranxyz"
-          />
-          <TaskRow
-            n="02"
             href={X_URL}
             done={notified}
             onOpen={markNotified}
@@ -207,7 +191,7 @@ export function WhitelistForm({
             doneLabel="Notifications on"
           />
           <TaskRow
-            n="03"
+            n="02"
             href={X_POST_URL}
             done={reposted}
             onOpen={markReposted}
@@ -216,7 +200,7 @@ export function WhitelistForm({
             doneLabel="Reposted the drop post"
           />
           <TaskRow
-            n="04"
+            n="03"
             href={TELEGRAM_URL}
             done={joined}
             onOpen={markJoined}
@@ -228,7 +212,7 @@ export function WhitelistForm({
         <p className={cn("font-sans text-base", tasksDone ? "text-accent" : "text-muted")}>
           {tasksDone
             ? "Tasks done. Drop your handle and wallet."
-            : "Wallet stays locked until all four are done."}
+            : "Wallet stays locked until all three are done."}
         </p>
       </div>
       <div className="flex flex-col gap-2">

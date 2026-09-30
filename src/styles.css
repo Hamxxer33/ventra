@@ -133,6 +133,67 @@
   background: radial-gradient(ellipse at center, transparent 50%, rgb(0 0 0 / 0.45) 100%);
 }
 
+/* ------------------------------------------------------------------ */
+/* Claim site — Concrete Foundation–inspired light stone aesthetic     */
+/* Scoped so /whitelist keeps the pixel theme.                         */
+/* ------------------------------------------------------------------ */
+
+.claim-concrete {
+  --color-bg: #f4f2ee;
+  --color-surface: #ffffff;
+  --color-surface-2: #ebe8e2;
+  --color-fg: #0a0a0a;
+  --color-muted: #6b6560;
+  --color-accent: #e8d48b;
+  --color-accent-dim: #d4bc62;
+  --color-border: #d6d1c8;
+  --color-danger: #c43c3c;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --shadow-pixel: none;
+  --shadow-pixel-sm: none;
+
+  --text-micro: 0.6875rem;
+  --text-pixel: 0.875rem;
+  --text-pixel-lg: 1.125rem;
+  --text-pixel-xl: 1.5rem;
+  --text-pixel-2xl: 2rem;
+  --text-pixel-hero: clamp(2rem, 5vw, 3.25rem);
+
+  min-height: 100dvh;
+  background-color: var(--color-bg);
+  background-image: none;
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+}
+
+.claim-concrete .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  text-transform: none;
+  font-weight: 600;
+}
+
+.claim-concrete button.font-display,
+.claim-concrete .font-display.uppercase {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+
+.claim-concrete ::selection {
+  background: var(--color-accent);
+  color: var(--color-fg);
+}
+
+.claim-concrete :focus-visible {
+  outline: 2px solid #0a0a0a;
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ventra-caret {
     animation: none;
