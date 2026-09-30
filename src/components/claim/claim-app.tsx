@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { TelegramLogo } from "@/components/pixel-logo";
 import { ClaimProviders } from "@/components/claim/claim-providers";
 import { ClaimWizard } from "@/components/claim/claim-wizard";
+import { HeaderConnect } from "@/components/claim/header-connect";
 import { ClaimOpensBanner } from "@/components/claim/claim-opens-banner";
 import {
   CLAIM_DOMAIN,
@@ -30,12 +31,7 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
               </div>
               <span className="sr-only">Ventran</span>
             </div>
-            <a
-              href="#register"
-              className="inline-flex h-9 items-center border border-border bg-surface px-4 font-sans text-sm text-fg hover:bg-surface-2"
-            >
-              Connect Wallet
-            </a>
+            <HeaderConnect />
           </header>
 
           {/* Brand + stats */}
