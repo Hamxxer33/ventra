@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { TelegramLogo } from "@/components/pixel-logo";
 import { ClaimProviders } from "@/components/claim/claim-providers";
 import { ClaimWizard } from "@/components/claim/claim-wizard";
+import { ClaimOpensBanner } from "@/components/claim/claim-opens-banner";
 import {
   CLAIM_DOMAIN,
   COMMUNITY_OPENS_AT,
@@ -79,9 +80,9 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
               Check eligibility, see both allocations, then register on this site.
             </p>
             <p className="max-w-xl font-sans text-base leading-relaxed text-fg/80 sm:text-lg">
-              Community claims open {formatOpensAt(COMMUNITY_OPENS_AT)}. NFT claim window
-              announced separately.
+              NFT claim window announced separately.
             </p>
+            <ClaimOpensBanner />
           </section>
 
           {/* Wizard = claim cards */}
