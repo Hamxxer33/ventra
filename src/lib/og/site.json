@@ -1,6 +1,7 @@
 {
-  "title": "Ventran $VENT Airdrop",
-  "description": "Claim the Ventran ($VENT) airdrop on Arbitrum One.",
+  "title": "Ventran ($VENT) Airdrop — claim.ventran.xyz",
+  "description": "Claim the Ventran ($VENT) airdrop on Arbitrum One. Official page: claim.ventran.xyz.",
   "card": "custom",
-  "color": "004CFC"
+  "type": "website",
+  "color": "e8d48b"
 }

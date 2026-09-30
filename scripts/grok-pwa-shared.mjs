@@ -342,18 +342,21 @@ export function grokOgHeadTags({
 } = {}) {
   const title = resolveOgTitle(site, appName, host, documentTitle);
   const publicHost = resolvePublicHost(host);
+  const description = String(site.description ?? "").trim();
+  const siteType = String(site.type ?? "").trim().toLowerCase();
+  const ogType = siteType === "x:game" ? "x:game" : siteType || "website";
   const tags = [
     `<meta name="twitter:card" content="summary_large_image">`,
     `<meta property="og:title" content="${escapeHtml(title)}">`,
+    `<meta name="twitter:title" content="${escapeHtml(title)}">`,
   ];
-  const description = String(site.description ?? "").trim();
   if (description) {
     tags.push(`<meta property="og:description" content="${escapeHtml(description)}">`);
+    tags.push(`<meta name="twitter:description" content="${escapeHtml(description)}">`);
   }
-  if (String(site.type ?? "").toLowerCase() === "x:game") {
-    tags.push(`<meta property="og:type" content="x:game">`);
-  }
+  tags.push(`<meta property="og:type" content="${escapeHtml(ogType)}">`);
   if (publicHost) {
+    tags.push(`<meta property="og:url" content="https://${escapeHtml(publicHost)}/">`);
     const asset = resolveOgCardAsset(site, cwd);
     const custom = Boolean(asset);
     let image = custom
@@ -361,11 +364,18 @@ export function grokOgHeadTags({
       : `${ogServiceUrl()}/v1/card.png?host=${encodeURIComponent(publicHost)}&title=${encodeURIComponent(title)}`;
     const color = !custom ? placeholderCardColor(site) : "";
     if (color) image += `&color=${encodeURIComponent(color)}`;
+    // Cache-bust so X refreshes the share card when assets/meta change.
+    if (custom) {
+      const sep = image.includes("?") ? "&" : "?";
+      image = `${image}${sep}v=2`;
+    }
     tags.push(`<meta property="og:image" content="${escapeHtml(image)}">`);
     tags.push(`<meta property="og:image:width" content="1200">`);
     tags.push(`<meta property="og:image:height" content="630">`);
+    tags.push(`<meta name="twitter:image" content="${escapeHtml(image)}">`);
+    // Game banner only — do not emit x:game:image for normal websites (avoids wrong card art).
     const banner = String(site.banner ?? "").trim();
-    if (banner) {
+    if (banner && ogType === "x:game") {
       const bannerUrl = `https://${publicHost}${banner.startsWith("/") ? banner : `/${banner}`}`;
       tags.push(`<meta property="x:game:image" content="${escapeHtml(bannerUrl)}">`);
       tags.push(`<meta property="x:game:image:width" content="1200">`);
