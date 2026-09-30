@@ -94,8 +94,19 @@ export interface AirdropPool {
   demoClaimed?: readonly Address[];
 }
 
-/** Community claims open 5 Oct 2026. Exact time TBD, default 12:00 UTC. */
-export const COMMUNITY_OPENS_AT = Date.UTC(2026, 9, 5, 12, 0, 0);
+/**
+ * Community claims open 5 Oct 2026, 12:00 PM WAT (UTC+1) =
+ * Date.UTC(2026, 9, 5, 11, 0, 0).
+ */
+export const COMMUNITY_OPENS_AT = Date.UTC(2026, 9, 5, 11, 0, 0);
+
+/** Distribution split (whole VENT tokens, display only). No team share. */
+export const DISTRIBUTION = {
+  liquidity: 5_000_000_000,
+  community: 3_500_000_000,
+  nft: 1_500_000_000,
+  team: 0,
+} as const;
 
 export const POOLS: readonly AirdropPool[] = [
   {
@@ -120,12 +131,13 @@ export const POOLS: readonly AirdropPool[] = [
     name: "Pool 2 · Ventra NFT holders",
     shortName: "the NFT holder pool",
     description:
-      "1.5B VENT for Ventra NFT holders, from a holder snapshot taken after the mint closes. Opens after Pool 1.",
+      "1.5B VENT for Ventra NFT holders from the final mint snapshot. Register now; claim opens with the community window.",
     totalTokens: 1_500_000_000,
-    allocationSource: "Ventra NFT holder snapshot (after mint closes)",
-    status: "snapshot-pending",
-    statusLabel: "After NFT mint snapshot",
-    opensAt: null,
+    allocationSource: "Ventra NFT holder snapshot (final, mint complete)",
+    eligibleNote: "Eligible · amount shown when claim opens",
+    status: "upcoming",
+    statusLabel: "Claims open soon",
+    opensAt: COMMUNITY_OPENS_AT,
     contract: null,
     proofsPublished: false,
   },
@@ -205,6 +217,7 @@ export function formatCompactTokens(n: number): string {
   return n.toLocaleString("en-US");
 }
 
+/** Format claim open time in WAT (Africa/Lagos, UTC+1). */
 export function formatOpensAt(ms: number): string {
   return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
@@ -212,11 +225,11 @@ export function formatOpensAt(ms: number): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "UTC",
+    timeZone: "Africa/Lagos",
     hour12: false,
   })
     .format(new Date(ms))
-    .concat(" UTC");
+    .concat(" WAT");
 }
 
 /** True if a wallet error (or anything in its cause chain) is a user rejection. */

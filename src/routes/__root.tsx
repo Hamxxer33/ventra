@@ -14,7 +14,7 @@ export const Route = createRootRoute({
       { title: APP_NAME },
       {
         name: "description",
-        content: `Claim the Ventran ($VENT) airdrop on Arbitrum One. Official claim page: ${CLAIM_DOMAIN}. Never share your seed phrase.`,
+        content: `Register for the Ventran ($VENT) airdrop on Arbitrum One. Official page: ${CLAIM_DOMAIN}. $1 ARB registration fee. Never share your seed phrase.`,
       },
       { name: "theme-color", content: "#061433" },
     ],
