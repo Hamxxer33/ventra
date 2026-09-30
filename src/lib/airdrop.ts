@@ -114,12 +114,13 @@ export const POOLS: readonly AirdropPool[] = [
     name: "Pool 1 · Community airdrop",
     shortName: "the Community airdrop",
     description:
-      "3.5B VENT for waitlist wallets, weighted by each wallet's Arbitrum transaction count at a fixed snapshot block. Opens first.",
+      "3.5B VENT for waitlist wallets — 180 VENT per Arbitrum One transaction at the snapshot. Opens first.",
     totalTokens: 3_500_000_000,
     // Per-wallet amounts are computed off-chain and shipped in the proof files.
     // The page only ever displays the amount from the proof file; it never computes one.
-    allocationSource: "Waitlist wallets × Arbitrum transactions at the snapshot block",
-    eligibleNote: "Based on your Arbitrum transactions at the snapshot",
+    // Claim is FCFS off-site — do NOT mention FCFS in UI copy.
+    allocationSource: "180 VENT × Arbitrum One transactions at the snapshot",
+    eligibleNote: "180 VENT per Arbitrum transaction at the snapshot",
     status: "upcoming",
     statusLabel: "Claims open soon",
     opensAt: COMMUNITY_OPENS_AT,

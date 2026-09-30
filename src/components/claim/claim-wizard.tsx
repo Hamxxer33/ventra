@@ -798,8 +798,8 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                 Is this eligibility wallet compromised?
               </p>
               <p className="font-sans text-sm text-muted">
-                If the wallet is unsafe, you can remap once to a new claim wallet via EIP-712
-                (eligible signs). Remap is one-time — we never ask for unlimited approvals.
+                If the wallet is unsafe, you can remap once to a new claim wallet. The eligible
+                wallet signs once; remap is one-time.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button
@@ -917,8 +917,8 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                 Registration fee: ${REGISTRATION.feeUsd} in ETH on Arbitrum
               </p>
               <p className="font-sans text-sm text-fg">
-                Pay <strong>{feeLabel}</strong> as native ETH (<code className="text-xs">msg.value</code>)
-                on {VENT.chainName}. Not the ARB token — no approve, no ERC-20 transfer.
+                Pay about <strong>{feeLabel}</strong> in ETH on {VENT.chainName} when you register.
+                That is the only fee.
               </p>
               {priceQuery.data ? (
                 <p className="mt-2 font-sans text-xs text-muted">
@@ -980,7 +980,7 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                     <span className="text-danger">Not set</span>
                   )}
                   <span className="mt-1 block text-xs text-muted">
-                    ~$1 ETH goes here via VentRegistration (not a bare transfer).
+                    Registration fee goes here.
                   </span>
                 </dd>
               </div>
