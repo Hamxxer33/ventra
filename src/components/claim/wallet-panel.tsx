@@ -56,7 +56,8 @@ export function WalletPanel() {
     const named = connectors.filter((c) => c.type === "injected" && c.id !== "injected");
     const mocks = connectors.filter((c) => c.type === "mock");
     const generic = connectors.filter((c) => c.id === "injected");
-    const list = [...named, ...mocks];
+    const walletConnectors = connectors.filter((c) => c.id === "walletConnect");
+    const list = [...named, ...mocks, ...walletConnectors];
     if (named.length === 0 && injectedAvailable) list.unshift(...generic);
     return list;
   }, [connectors, injectedAvailable]);
@@ -131,7 +132,13 @@ export function WalletPanel() {
               ) : (
                 <Wallet className="size-4" />
               )}
-              {c.type === "mock" ? "Demo wallet" : c.id === "injected" ? "Connect wallet" : c.name}
+              {c.type === "mock"
+                ? "Demo wallet"
+                : c.id === "injected"
+                  ? "Connect wallet"
+                  : c.id === "walletConnect"
+                    ? "WalletConnect"
+                    : c.name}
             </Button>
           ))}
         </div>
