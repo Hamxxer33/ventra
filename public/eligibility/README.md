@@ -1,6 +1,7 @@
 # Eligibility data (static)
 
-- `nft-holders.json` — normalized Ventra NFT holder snapshot (lowercase address → { owner, tokenCount }). Source: listings/nft-holders/ventran-nft-holders-final.csv.
-- `community-demo.json` — fake community allocations for `?demo=1` only. Real community proof/eligibility JSON is not published yet.
+- `community.json` — lowercase address → `{ amountWei, txCount, amount }`. 48,727 wallets, 3.5B VENT at 180/tx (from checker-pack). Do not mention FCFS on the site.
+- `nft-holders.json` — lowercase address → `{ owner, tokenCount, amountWei }`. 2,567 holders, 178,784 VENT per NFT.
+- `community-demo.json` — fake allocations for `?demo=1` only.
 
-Do not invent per-wallet VENT amounts for the NFT pool here.
+Merkle proofs for claim contracts stay off this repo.
