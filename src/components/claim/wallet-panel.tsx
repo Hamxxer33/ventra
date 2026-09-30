@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { AlertTriangle, LogOut, Wallet } from "lucide-react";
 import { useConnect, useConnection, useConnectors, useDisconnect, useSwitchChain } from "wagmi";
 import { Button } from "@/components/ui/button";
+import { ConnectWalletButton } from "@/components/claim/connect-wallet-button";
 import { VENT, isUserRejection, shortAddress } from "@/lib/airdrop";
 import { TARGET_CHAIN } from "@/lib/wagmi";
 import { useMounted } from "@/components/claim/use-mounted";
@@ -118,33 +119,22 @@ export function WalletPanel() {
         Connect the wallet you signed up with to check both pools. Checking is free and never asks
         for a signature.
       </p>
-      {visible.length > 0 ? (
-        <div className="flex flex-wrap gap-3">
-          {visible.map((c) => (
+      <div className="flex flex-wrap gap-3">
+        <ConnectWalletButton label="Connect wallet" />
+        {visible
+          .filter((c) => c.type === "mock")
+          .map((c) => (
             <Button
               key={c.uid}
-              variant={c.type === "mock" ? "secondary" : "primary"}
+              variant="secondary"
               disabled={connect.isPending}
               onClick={() => connect.mutate({ connector: c, chainId: TARGET_CHAIN.id })}
             >
-              {c.icon ? (
-                <img src={c.icon} alt="" className="size-4" />
-              ) : (
-                <Wallet className="size-4" />
-              )}
-              {c.type === "mock"
-                ? "Demo wallet"
-                : c.id === "injected"
-                  ? "Connect wallet"
-                  : c.id === "walletConnect"
-                    ? "WalletConnect"
-                    : c.name}
+              <Wallet className="size-4" />
+              Demo wallet
             </Button>
           ))}
-        </div>
-      ) : (
-        <WalletDeepLinks />
-      )}
+      </div>
       {connect.error ? (
         <p className="font-sans text-base text-danger">
           {isUserRejection(connect.error)
