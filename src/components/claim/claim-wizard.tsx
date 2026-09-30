@@ -204,7 +204,20 @@ function NftStatus({ n }: { n: NftLookup }) {
     return (
       <div className="flex flex-col gap-1">
         <p className="font-sans text-xs font-medium uppercase tracking-wider text-fg">Eligible</p>
-        <p className="font-sans text-sm text-fg">{nftAmountCopy(n.tokenCount)}</p>
+        <p className="text-2xl font-semibold text-fg">
+          {n.amountWei !== undefined ? (
+            <>
+              {formatVentExact(n.amountWei)} <span className="text-base font-medium">VENT</span>
+            </>
+          ) : (
+            <span className="text-base font-medium">{nftAmountCopy(n.tokenCount)}</span>
+          )}
+        </p>
+        {n.amountWei !== undefined ? (
+          <p className="font-sans text-sm text-muted">
+            {n.tokenCount.toLocaleString("en-US")} NFT{n.tokenCount === 1 ? "" : "s"} · 178,784 VENT each
+          </p>
+        ) : null}
       </div>
     );
   }
