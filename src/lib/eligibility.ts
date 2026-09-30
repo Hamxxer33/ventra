@@ -1,11 +1,9 @@
 /**
  * Eligibility lookup for community + NFT pools.
  *
- * Community: real proof/eligibility JSON not published yet → returns
- * `not-yet-published`. With `?demo=1`, loads `/eligibility/community-demo.json`.
- *
- * NFT: loads `/eligibility/nft-holders.json` (bundled from the final holder CSV).
- * No per-wallet VENT amount yet — show token count only.
+ * Community: `/eligibility/community.json` (flat map from checker-pack).
+ * NFT: `/eligibility/nft-holders.json` (tokenCount + amountWei).
+ * `?demo=1` still uses `/eligibility/community-demo.json` for community.
  */
 import { formatVentExact } from "@/lib/airdrop";
 
@@ -16,16 +14,52 @@ export type CommunityLookup =
   | { status: "error"; message: string };
 
 export type NftLookup =
-  | { status: "eligible"; owner: string; tokenCount: number }
+  | { status: "eligible"; owner: string; tokenCount: number; amountWei?: bigint }
   | { status: "not-eligible" }
   | { status: "error"; message: string };
 
+type CommunityEntry = { amountWei: string; txCount?: number; amount?: string; note?: string };
 type CommunityDemoEntry = { amountWei: string; note?: string };
-type NftEntry = { owner: string; tokenCount: number };
+type NftEntry = { owner: string; tokenCount: number; amountWei?: string };
 
+let communityCache: Record<string, CommunityEntry> | null = null;
+let communityLoad: Promise<Record<string, CommunityEntry>> | null = null;
 let communityDemoCache: Record<string, CommunityDemoEntry> | null = null;
 let nftCache: Record<string, NftEntry> | null = null;
 let nftLoad: Promise<Record<string, NftEntry>> | null = null;
+
+async function loadCommunity(): Promise<Record<string, CommunityEntry>> {
+  if (communityCache) return communityCache;
+  if (!communityLoad) {
+    communityLoad = (async () => {
+      const res = await fetch("/eligibility/community.json");
+      if (!res.ok) throw new Error(`community.json HTTP ${res.status}`);
+      const data = (await res.json()) as
+        | Record<string, CommunityEntry>
+        | { status?: string; holders?: Record<string, { amount: string; txCount?: number }> };
+      // Support flat map or checker wrapper
+      if (data && typeof data === "object" && "holders" in data && data.holders) {
+        const flat: Record<string, CommunityEntry> = {};
+        for (const [addr, h] of Object.entries(data.holders)) {
+          const amount = BigInt(h.amount);
+          if (amount <= 0n) continue;
+          flat[addr.toLowerCase()] = {
+            amountWei: (amount * 10n ** 18n).toString(),
+            txCount: h.txCount,
+            amount: h.amount,
+          };
+        }
+        communityCache = flat;
+      } else if (data && typeof data === "object" && "status" in data && (data as { status?: string }).status === "not-yet-published") {
+        communityCache = {};
+      } else {
+        communityCache = data as Record<string, CommunityEntry>;
+      }
+      return communityCache;
+    })();
+  }
+  return communityLoad;
+}
 
 async function loadCommunityDemo(): Promise<Record<string, CommunityDemoEntry>> {
   if (communityDemoCache) return communityDemoCache;
@@ -48,28 +82,39 @@ async function loadNftHolders(): Promise<Record<string, NftEntry>> {
   return nftLoad;
 }
 
-/** Clean community lookup. Real list unpublished → always `not-yet-published` unless demo. */
 export async function lookupCommunity(
   address: string,
   opts: { demo?: boolean } = {},
 ): Promise<CommunityLookup> {
   const key = address.trim().toLowerCase();
-  if (!opts.demo) {
-    return { status: "not-yet-published" };
-  }
   try {
-    const data = await loadCommunityDemo();
+    if (opts.demo) {
+      const data = await loadCommunityDemo();
+      const entry = data[key];
+      if (!entry) return { status: "not-eligible" };
+      return {
+        status: "eligible",
+        amountWei: BigInt(entry.amountWei),
+        note: entry.note,
+      };
+    }
+    const data = await loadCommunity();
+    if (Object.keys(data).length === 0) return { status: "not-yet-published" };
     const entry = data[key];
     if (!entry) return { status: "not-eligible" };
+    const note =
+      entry.txCount !== undefined
+        ? `${entry.txCount.toLocaleString("en-US")} Arb txs × 180 VENT`
+        : undefined;
     return {
       status: "eligible",
       amountWei: BigInt(entry.amountWei),
-      note: entry.note,
+      note,
     };
   } catch (err) {
     return {
       status: "error",
-      message: err instanceof Error ? err.message : "Failed to load community demo list",
+      message: err instanceof Error ? err.message : "Failed to load community list",
     };
   }
 }
@@ -84,6 +129,7 @@ export async function lookupNft(address: string): Promise<NftLookup> {
       status: "eligible",
       owner: entry.owner,
       tokenCount: entry.tokenCount,
+      amountWei: entry.amountWei ? BigInt(entry.amountWei) : undefined,
     };
   } catch (err) {
     return {
@@ -109,11 +155,7 @@ export async function lookupBoth(
     lookupNft(address),
   ]);
   const anyEligible =
-    community.status === "eligible" ||
-    nft.status === "eligible" ||
-    // Community not published yet: still allow register path if NFT-eligible,
-    // or if community is pending (user may still register for later claim).
-    community.status === "not-yet-published";
+    community.status === "eligible" || nft.status === "eligible";
   return { address: address.toLowerCase(), community, nft, anyEligible };
 }
 
@@ -122,7 +164,10 @@ export function formatCommunityAmount(lookup: CommunityLookup): string | null {
   return `${formatVentExact(lookup.amountWei)} VENT`;
 }
 
-/** NFT pool: no per-wallet VENT rate yet. */
-export function nftAmountCopy(tokenCount: number): string {
-  return `Eligible · ${tokenCount.toLocaleString("en-US")} NFT${tokenCount === 1 ? "" : "s"} held · amount shown when claim opens`;
+export function nftAmountCopy(tokenCount: number, amountWei?: bigint): string {
+  const nfts = `${tokenCount.toLocaleString("en-US")} NFT${tokenCount === 1 ? "" : "s"}`;
+  if (amountWei !== undefined) {
+    return `${formatVentExact(amountWei)} VENT · ${nfts}`;
+  }
+  return `Eligible · ${nfts} held · amount shown when claim opens`;
 }
