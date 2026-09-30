@@ -10,13 +10,7 @@ type Props = {
 };
 
 /** Opens the Reown AppKit wallet picker (MetaMask, Trust, QR, …). */
-export function ConnectWalletButton({
-  label = "Connect wallet",
-  variant = "primary",
-  className,
-}: Props) {
-  const { open } = useAppKit();
-
+export function ConnectWalletButton(props: Props) {
   if (!WC_PROJECT_ID) {
     return (
       <p className="font-sans text-sm text-danger">
@@ -24,6 +18,16 @@ export function ConnectWalletButton({
       </p>
     );
   }
+  // Only mount the hook after createAppKit (module top-level in @/lib/appkit).
+  return <ConnectWalletButtonLive {...props} />;
+}
+
+function ConnectWalletButtonLive({
+  label = "Connect wallet",
+  variant = "primary",
+  className,
+}: Props) {
+  const { open } = useAppKit();
 
   return (
     <Button
