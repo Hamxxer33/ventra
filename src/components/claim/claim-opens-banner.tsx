@@ -2,7 +2,7 @@ import { ClaimCountdown } from "@/components/claim/claim-countdown";
 import { useNow } from "@/components/claim/use-now";
 import { COMMUNITY_OPENS_AT, formatOpensAt } from "@/lib/airdrop";
 
-/** Hero / top-of-page countdown to community claim open (5 Oct 2026, 12:00 WAT). */
+/** Hero / top-of-page countdown to community claim open (14 Oct 2026, 12:00 WAT). */
 export function ClaimOpensBanner() {
   const now = useNow();
   const open = now !== null && now >= COMMUNITY_OPENS_AT;
