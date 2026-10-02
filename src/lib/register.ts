@@ -23,7 +23,7 @@ export const registrationContract: Address | null =
   "0x5c607d96284382c6f4f0eb1484e768953e93cdee" as Address;
 export const registrationContractSet = true;
 
-/** Display fee: $1 USD worth of native ETH. Exact wei comes from live quote / on-chain. */
+/** Display fee: ~$1 USD worth of native ETH. Exact msg.value is on-chain registrationFee(). */
 export const registrationFeeUsd = 1;
 
 /**
@@ -45,7 +45,7 @@ export const REGISTRATION = {
   /** EIP-712 domain for setClaimWallet */
   eip712Name: "VentRegistration",
   eip712Version: "1",
-  /** Max allowed drift between live $1→ETH quote and on-chain registrationFee */
+  /** Soft-warn threshold when live $1→ETH quote drifts from on-chain fee (never blocks submit) */
   feeTolerance: 0.02,
 } as const;
 

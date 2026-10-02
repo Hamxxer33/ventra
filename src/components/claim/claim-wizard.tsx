@@ -401,10 +401,14 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
     }
   }, [priceQuery.data?.usd]);
 
-  /** Amount to send: prefer on-chain fee when set; else live quote. */
-  const payWei = onChainFee ?? quoteWei;
+  /**
+   * msg.value source of truth: on-chain registrationFee() when the contract is set.
+   * Live $1→ETH quote is display-only and must never gate submit.
+   */
+  const payWei = contractSet ? onChainFee : quoteWei;
 
-  const feeMismatch =
+  /** Soft warn only — USD estimate drift must not block register. */
+  const feeQuoteDrift =
     contractSet &&
     onChainFee !== null &&
     quoteWei !== null &&
@@ -598,14 +602,12 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
       setRegisterError("Registration is not open yet.");
       return;
     }
-    if (feeMismatch) {
-      setRegisterError(
-        `On-chain fee is ${formatEthExact(onChainFee!)} ETH; live quote is ${formatEthExact(quoteWei!)} ETH (>${REGISTRATION.feeTolerance * 100}% drift). Refresh or wait for owner update.`,
-      );
-      return;
-    }
     if (payWei === null) {
-      setRegisterError("Could not determine fee amount — wait for price / on-chain fee.");
+      setRegisterError(
+        contractSet
+          ? "Could not read on-chain registrationFee — wait for RPC and retry."
+          : "Could not determine fee amount — wait for price quote.",
+      );
       return;
     }
     if (chainId !== TARGET_CHAIN.id) {
@@ -925,11 +927,11 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                 Confirm registration in your wallet on {VENT.chainName}. Your wallet will show the
                 exact amount before you approve.
               </p>
-              {feeMismatch ? (
-                <p className="mt-2 flex items-start gap-2 font-sans text-sm text-danger">
+              {feeQuoteDrift ? (
+                <p className="mt-2 flex items-start gap-2 font-sans text-sm text-muted">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                  On-chain fee does not match the live quote. Refresh or wait for owner update —
-                  submit blocked.
+                  Live USD estimate drifted from the on-chain fee; you will pay the on-chain
+                  amount ({formatEthExact(onChainFee!)} ETH).
                 </p>
               ) : null}
             </div>
@@ -1051,7 +1053,6 @@ export function ClaimWizard({ demo = false }: { demo?: boolean }) {
                   write.isPending ||
                   receipt.isLoading ||
                   !isConnected ||
-                  feeMismatch ||
                   payWei === null ||
                   Boolean(alreadyRegistered) ||
                   registrationOpen === false ||

@@ -98,7 +98,7 @@ export function formatEthExact(wei: bigint): string {
   return neg ? `-${out}` : out;
 }
 
-/** True if |a-b| / b > tolerance (e.g. 0.02 = 2%). b must be > 0. */
+/** Soft-warn helper: true if |a-b| / b > tolerance (e.g. 0.02 = 2%). Never used to block submit. */
 export function feeDiffersBeyondTolerance(quoteWei: bigint, onChainWei: bigint, tolerance = 0.02): boolean {
   if (onChainWei === 0n) return true;
   const q = quoteWei > onChainWei ? quoteWei - onChainWei : onChainWei - quoteWei;
