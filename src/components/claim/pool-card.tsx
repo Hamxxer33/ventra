@@ -215,7 +215,7 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
       </div>
     );
   } else if (!entry) {
-    yourStatus = <p className={text.fg}>This wallet is not eligible for {pool.shortName}.</p>;
+    yourStatus = <p className={text.fg}>This wallet has no allocation.</p>;
   } else {
     yourStatus = (
       <div className="flex flex-col gap-1">
@@ -225,9 +225,6 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
         <p className="break-all font-display text-pixel-lg text-fg sm:text-pixel-xl">
           {formatVentExact(entry.amount)} <span className="text-accent">VENT</span>
         </p>
-        {pool.eligibleNote ? (
-          <p className="font-sans text-base text-muted">{pool.eligibleNote}</p>
-        ) : null}
         {claimed ? (
           <p className={cn(text.fg, "flex items-center gap-2")}>
             <CheckCircle2 className="size-4 text-accent" /> Already claimed to this wallet.
@@ -259,9 +256,11 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
     button = <Button disabled>{proofRejected ? "Cannot claim" : "Checking…"}</Button>;
   else if (write.isPending) button = <Button disabled>Confirm in wallet…</Button>;
   else if (receipt.isLoading) button = <Button disabled>Claiming…</Button>;
-  else button = <Button onClick={onClaim}>Claim {formatVentExact(entry.amount)} VENT · 0.0002 ETH fee</Button>;
+  else button = <Button onClick={onClaim}>Claim</Button>;
 
   const showCountdown = pool.opensAt !== null && (now === null || now < pool.opensAt);
+
+  if (pool.id !== "registrants-1200" && !entry) return null;
 
   return (
     <article
@@ -279,62 +278,8 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
         >
           {claimable ? "Claims open" : pool.statusLabel}
         </span>
-        <h3 className="font-display text-pixel text-fg sm:text-pixel-lg">{pool.name}</h3>
+        
       </header>
-
-      {pool.totalTokens > 0 ? (
-        <p className="font-display text-pixel-xl text-fg sm:text-pixel-2xl">
-          {formatCompactTokens(pool.totalTokens)} <span className="text-accent">VENT</span>
-        </p>
-      ) : null}
-      <p className="font-sans text-lg leading-snug text-muted">{pool.description}</p>
-
-      {showCountdown && pool.opensAt !== null ? (
-        <div className="flex flex-col gap-2">
-          <p className="font-display text-micro uppercase text-muted">
-            Claims open {formatOpensAt(pool.opensAt)}
-          </p>
-          <ClaimCountdown target={pool.opensAt} now={now} />
-        </div>
-      ) : pool.status === "snapshot-pending" ? (
-        <p className="font-display text-micro uppercase leading-relaxed text-muted">
-          Opens after the NFT mint snapshot · no date yet
-        </p>
-      ) : null}
-
-      <dl className="grid gap-2 font-sans text-base">
-        <div className="flex flex-col">
-          <dt className="font-display text-micro uppercase text-muted">Allocation source</dt>
-          <dd className="text-fg">{pool.allocationSource}</dd>
-        </div>
-        {pool.snapshotBlock ? (
-          <div className="flex flex-col">
-            <dt className="font-display text-micro uppercase text-muted">Snapshot block</dt>
-            <dd className="text-fg">{pool.snapshotBlock.toLocaleString("en-US")}</dd>
-          </div>
-        ) : null}
-        <div className="flex flex-col">
-          <dt className="font-display text-micro uppercase text-muted">Claim fee</dt>
-          <dd className="text-fg">0.0002 ETH per claim, plus gas</dd>
-        </div>
-        <div className="flex flex-col">
-          <dt className="font-display text-micro uppercase text-muted">Claim contract</dt>
-          <dd className="break-all text-fg">
-            {pool.contract ? (
-              <a
-                href={VENT.explorerAddressUrl(pool.contract)}
-                target="_blank"
-                rel="noreferrer"
-                className="text-accent underline underline-offset-4"
-              >
-                {pool.contract}
-              </a>
-            ) : (
-              "Not deployed yet"
-            )}
-          </dd>
-        </div>
-      </dl>
 
       <div className="border-2 border-border bg-bg p-4">
         <p className="mb-2 font-display text-micro uppercase text-muted">Your wallet</p>
@@ -350,8 +295,8 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
               : /AlreadyClaimed/.test(String(write.error))
                 ? "This wallet has already claimed."
                 : /InsufficientFee|insufficient funds/i.test(String(write.error))
-                  ? "Not enough ETH. You need 0.0002 ETH for the claim fee plus a little gas."
-                  : "Claim failed. You may already have claimed, or need 0.0002 ETH for the fee plus gas."}
+                  ? "Not enough ETH in this wallet."
+                  : "Claim failed. Please try again."}
           </p>
         ) : null}
         {write.data ? (
@@ -364,27 +309,9 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
             View transaction <ExternalLink className="size-4" />
           </a>
         ) : null}
-        <p className="font-sans text-base text-muted">
-          One transaction on {VENT.chainName}: {CLAIM_FEE_LABEL} (sent with the claim) plus gas.
-          Registration is closed. We never ask for seed phrases.
-        </p>
         <SafetyLine />
       </div>
 
-      <ClaimForPanel
-        pool={pool}
-        meta={meta}
-        metaPending={proofsReady && metaQuery.isPending}
-        metaFailed={metaQuery.isError && !(metaQuery.error instanceof ProofDataError)}
-        onRetryMeta={() => void metaQuery.refetch()}
-        claimable={claimable}
-        claimFeeWei={claimFeeWei}
-        safetyError={
-          (metaQuery.error instanceof ProofDataError && metaQuery.error.message) ||
-          contractMismatch ||
-          null
-        }
-      />
     </article>
   );
 }

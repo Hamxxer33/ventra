@@ -40,26 +40,6 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
             <HeaderConnect />
           </header>
 
-          {/* Brand + stats */}
-          <div className="flex flex-col gap-4 border-y border-border py-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center">
-              <div className="border border-fg px-2 py-1.5 font-sans text-[11px] font-semibold tracking-[0.18em] text-fg sm:text-xs">
-                VENTRAN&nbsp;&nbsp;CLAIM
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-x-6 gap-y-2 font-sans text-sm text-fg">
-              <span>
-                Supply <strong className="font-semibold">100B</strong>
-              </span>
-              <span>
-                Airdrop <strong className="font-semibold">{fmt(AIRDROP_TOTAL_VENT)}</strong>
-              </span>
-              <span>
-                Wallets <strong className="font-semibold">{fmt(AIRDROP_RECIPIENTS)}</strong>
-              </span>
-            </div>
-          </div>
-
           {demo ? (
             <div className="mt-4 border border-danger bg-[#fdecea] px-4 py-3 font-sans text-sm text-danger">
               DEMO MODE: fake community allocations and demo wallet enabled. Not a real airdrop.
@@ -71,18 +51,7 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
             <h1 className="max-w-2xl text-4xl font-semibold leading-[1.08] tracking-tight text-fg sm:text-5xl">
               Claim your VENT
             </h1>
-            <p className="max-w-xl font-sans text-base leading-relaxed text-fg/80 sm:text-lg">
-              Connect the wallet you registered. Each registered wallet has one allocation that
-              combines {fmt(VENT_PER_ARB_TX)} VENT per Arbitrum One transaction and{" "}
-              {fmt(VENT_PER_NFT)} VENT per Ventra NFT. Registered wallets that had no allocation get
-              100,000 VENT from the top-up pool. Your wallet is checked against both pools below;
-              each claim costs a 0.0002 ETH fee plus gas.
-            </p>
-            <p className="max-w-xl font-sans text-base leading-relaxed text-fg/80 sm:text-lg">
-              Registration is closed (snapshot at block {fmt(REGISTRATION_CUTOFF_BLOCK)}). There
-              is no separate NFT claim.
-            </p>
-            <ClaimOpensBanner />
+            <p className="font-sans text-sm font-semibold uppercase tracking-wider text-accent">Claims open</p>
           </section>
 
           {/* Wizard = claim cards */}
@@ -93,125 +62,6 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
               ))}
             </div>
           </div>
-
-          {/* Resources */}
-          <section className="border-t border-border py-10">
-            <h2 className="mb-5 text-xl font-semibold text-fg">Resources</h2>
-            <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr] lg:items-start">
-              <ul className="divide-y divide-border border border-border bg-surface">
-                <li>
-                  <a
-                    href={OPENSEA_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-between gap-3 px-4 py-3.5 font-sans text-sm text-fg hover:bg-surface-2"
-                  >
-                    <span>OpenSea · Ventran NFT</span>
-                    <ExternalLink className="size-3.5 text-muted" />
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href={WEBSITE_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-between gap-3 px-4 py-3.5 font-sans text-sm text-fg hover:bg-surface-2"
-                  >
-                    <span>ventran.xyz</span>
-                    <ExternalLink className="size-3.5 text-muted" />
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href={TELEGRAM_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-between gap-3 px-4 py-3.5 font-sans text-sm text-fg hover:bg-surface-2"
-                  >
-                    <span className="flex items-center gap-2">
-                      <TelegramLogo /> Telegram
-                    </span>
-                    <ExternalLink className="size-3.5 text-muted" />
-                  </a>
-                </li>
-              </ul>
-              <div className="hidden border border-border bg-surface p-6 lg:block">
-                <p className="mb-4 font-sans text-xs font-medium uppercase tracking-wider text-muted">
-                  Distribution
-                </p>
-                <ul className="flex flex-col gap-3 font-sans text-sm text-fg">
-                  <li className="flex justify-between border-b border-border pb-2">
-                    <span>Airdrop total</span>
-                    <strong>{fmt(AIRDROP_TOTAL_VENT)}</strong>
-                  </li>
-                  <li className="flex justify-between border-b border-border pb-2">
-                    <span>Per Arbitrum tx</span>
-                    <strong>{fmt(VENT_PER_ARB_TX)}</strong>
-                  </li>
-                  <li className="flex justify-between border-b border-border pb-2">
-                    <span>Per Ventra NFT</span>
-                    <strong>{fmt(VENT_PER_NFT)}</strong>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>Wallets with allocation</span>
-                    <strong>
-                      {fmt(AIRDROP_RECIPIENTS)} / {fmt(AIRDROP_REGISTRANTS)}
-                    </strong>
-                  </li>
-                </ul>
-                <p className="mt-4 break-all font-sans text-xs text-muted">
-                  Token{" "}
-                  <a href={VENT.explorerTokenUrl} target="_blank" rel="noreferrer" className="underline">
-                    {VENT.address}
-                  </a>{" "}
-                  · {VENT.chainName}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Safety */}
-          <section className="border-t border-border py-10">
-            <div className="grid gap-8 sm:grid-cols-2">
-              <div>
-                <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-fg">
-                  <ShieldAlert className="size-4 text-danger" />
-                  Important information
-                </h2>
-                <ul className="flex list-disc flex-col gap-2 pl-5 font-sans text-sm leading-relaxed text-muted">
-                  <li>
-                    Only claim at <strong className="text-fg">{CLAIM_DOMAIN}</strong>.
-                    Links in DMs or replies are scams.
-                  </li>
-                  <li>Never share your seed phrase or private key.</li>
-                </ul>
-              </div>
-              <div>
-                <h2 className="mb-3 text-base font-semibold text-fg">Official links</h2>
-                <p className="font-sans text-sm leading-relaxed text-muted">
-                  NFT collection:{" "}
-                  <a
-                    href={OPENSEA_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-fg underline underline-offset-4"
-                  >
-                    opensea.io/collection/ventran
-                  </a>
-                  . Website:{" "}
-                  <a
-                    href={WEBSITE_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-fg underline underline-offset-4"
-                  >
-                    ventran.xyz
-                  </a>
-                  .
-                </p>
-              </div>
-            </div>
-          </section>
 
           {/* Footer — no X / Twitter */}
           <footer className="flex flex-col gap-4 border-t border-border py-6 pb-10">
@@ -244,9 +94,7 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
                 NFT whitelist
               </Link>
             </nav>
-            <p className="font-sans text-xs text-muted">
-              Claims open until {formatOpensAt(CLAIM_ENDS_AT)} · {CLAIM_DOMAIN}
-            </p>
+
           </footer>
         </div>
       </div>
