@@ -95,10 +95,10 @@ export interface AirdropPool {
 }
 
 /**
- * Community claims open 14 Oct 2026, 15:00 (3:00 PM) WAT (UTC+1) =
- * 2026-10-14T14:00:00.000Z = Date.UTC(2026, 9, 14, 14, 0, 0).
+ * Community claims open 14 Oct 2026, 18:02 (6:02 PM) WAT (UTC+1) =
+ * 2026-10-14T17:02:00.000Z = Date.UTC(2026, 9, 14, 17, 2, 0).
  */
-export const COMMUNITY_OPENS_AT = Date.UTC(2026, 9, 14, 14, 0, 0);
+export const COMMUNITY_OPENS_AT = Date.UTC(2026, 9, 14, 17, 2, 0);
 
 /** Distribution split (whole VENT tokens, display only). No team share. */
 export const DISTRIBUTION = {
