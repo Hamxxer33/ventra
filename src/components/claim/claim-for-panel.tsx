@@ -42,7 +42,7 @@ const text = {
   danger: "font-sans text-lg text-danger",
 };
 
-export const RECIPIENT_COPY = "Tokens always go to the listed wallet, not the wallet paying gas.";
+export const RECIPIENT_COPY = "Tokens always go to the listed wallet, not the wallet paying gas and the 0.0002 ETH claim fee.";
 
 interface ClaimForPanelProps {
   pool: AirdropPool;
@@ -55,6 +55,8 @@ interface ClaimForPanelProps {
   claimable: boolean;
   /** Hard stop from the shared safety checks (bad meta, token/root mismatch). */
   safetyError: string | null;
+  /** msg.value for claimFor (on-chain claimFee, 0.0002 ETH). */
+  claimFeeWei: bigint;
 }
 
 /**
@@ -94,6 +96,7 @@ function ClaimForBody({
   onRetryMeta,
   claimable,
   safetyError,
+  claimFeeWei,
 }: ClaimForPanelProps) {
   const inputId = useId();
   const { address: payer, isConnected, chainId } = useConnection();
@@ -183,6 +186,7 @@ function ClaimForBody({
       abi: VENT_AIRDROP_ABI,
       functionName: "claimFor",
       args: [account, entry.amount, entry.proof],
+      value: claimFeeWei,
       chainId: TARGET_CHAIN.id,
     });
   }

@@ -1,19 +1,20 @@
 /**
  * Ventran ($VENT) airdrop configuration: the single place to wire the claim page.
  *
- * STATUS: CLAIMS CLOSED. No VentAirdrop contract is deployed yet, so every pool has
- * `contract: null` and the claim button stays disabled ("Claims open soon"). No
- * transaction can be sent from this page until a contract address is set here.
+ * STATUS: CLAIMS OPEN. Registration closed on-chain (cutoff block 514875489). One merged
+ * registrant tree (community 1,200 VENT per Arbitrum tx + 178,784 VENT per Ventra NFT) is
+ * live at VentAirdrop 0xc3677bf0c137aebee98e0d9cf23dc28dd52f3b6b (verified on Sourcify).
+ * Every claim pays a flat claimFee (0.0002 ETH) as msg.value.
  *
  * Contract: one `VentAirdrop` deployment per pool (ABI: `src/lib/abi/VentAirdrop.json`).
- *   claim(uint256 amount, bytes32[] proof)                       msg.sender claims for itself
- *   claimFor(address account, uint256 amount, bytes32[] proof)   anyone pays gas; VENT always
+ *   claim(uint256 amount, bytes32[] proof) payable               msg.sender claims for itself
+ *   claimFor(address account, uint256 amount, bytes32[] proof) payable  anyone pays gas+fee; VENT always
  *                                                                goes to `account` (same claimed flag)
  *   isClaimed(address) view returns (bool)
  *   canClaim(address, uint256 amount, bytes32[] proof) view returns (bool)
- *   token() / merkleRoot() / claimStart() / claimEnd()
+ *   token() / merkleRoot() / claimStart() / claimEnd() / claimFee() / feeRecipient()
  *
- * Proofs (~558 MB, NOT in this repo): `${proofsBaseUrl}/<pool.id>/meta.json` and
+ * Proofs (registrants-1200, ~1.5 MB) are committed under public/proofs/; layout: `${proofsBaseUrl}/<pool.id>/meta.json` and
  * `${proofsBaseUrl}/<pool.id>/<xx>.json`, xx = lowercase address.slice(2, 4). See `proofs.ts`.
  *
  * To open a pool:
@@ -31,18 +32,42 @@ export const CLAIM_URL = `https://${CLAIM_DOMAIN}`;
 export const VENT = {
   name: "Ventran",
   symbol: "VENT",
-  address: "0xB67C6b8471d73009EbBa8A6a895674aEeBe5af26" as Address,
+  address: "0x8199567313b0667CD7aED073dE8002c69F0cD2Dd" as Address,
   decimals: 18,
-  totalSupply: 10_000_000_000,
+  totalSupply: 100_000_000_000,
   chainId: 42161,
   chainName: "Arbitrum One",
-  explorerTokenUrl: "https://arbiscan.io/token/0xB67C6b8471d73009EbBa8A6a895674aEeBe5af26",
+  explorerTokenUrl: "https://arbiscan.io/token/0x8199567313b0667CD7aED073dE8002c69F0cD2Dd",
   explorerAddressUrl: (address: string) => `https://arbiscan.io/address/${address}`,
   explorerTxUrl: (hash: string) => `https://arbiscan.io/tx/${hash}`,
 } as const;
 
-/** VentAirdrop ABI, copied verbatim from the contract repo (`abi/VentAirdrop.json`). */
+/** VentAirdrop ABI, verbatim from the Sourcify exact-match verification of the live contract. */
 export const VENT_AIRDROP_ABI = ventAirdropAbi as Abi;
+
+/** Live VentAirdrop on Arbitrum One (root 0xb22b…f416, 90-day window). */
+export const VENT_AIRDROP_ADDRESS = "0xc3677bf0c137aebee98e0d9cf23dc28dd52f3b6b" as Address;
+
+/** Top-up VentAirdrop for the 123 zero-allocation registrants (root 0x3571…662c). */
+export const VENT_TOPUP_AIRDROP_ADDRESS = "0x2d06df35cae219f1aeecdfd51cc56e7e520585f0" as Address;
+
+/**
+ * Flat claim fee in wei (immutable `claimFee` on the contract = 0.0002 ETH), sent as msg.value
+ * with claim()/claimFor(). The page reads claimFee() on-chain and uses that when available.
+ */
+export const CLAIM_FEE_WEI = 200_000_000_000_000n;
+export const CLAIM_FEE_LABEL = "0.0002 ETH claim fee";
+
+/** Registration is closed on-chain; the snapshot was taken at this block. */
+export const REGISTRATION_CLOSED = true;
+export const REGISTRATION_CUTOFF_BLOCK = 514_875_489;
+
+/** Final registrant tree totals (from meta.json). */
+export const AIRDROP_TOTAL_VENT = 1_831_014_304;
+export const AIRDROP_RECIPIENTS = 1_207;
+export const AIRDROP_REGISTRANTS = 1_330;
+export const VENT_PER_ARB_TX = 1_200;
+export const VENT_PER_NFT = 178_784;
 
 /**
  * Where the real proof files are hosted (CDN / Vercel Blob), no trailing slash.
@@ -95,10 +120,11 @@ export interface AirdropPool {
 }
 
 /**
- * Community claims open 16 Oct 2026, 18:02 (6:02 PM) WAT (UTC+1) =
- * 2026-10-16T17:02:00.000Z = Date.UTC(2026, 9, 16, 17, 2, 0).
+ * Claims opened 14 Oct 2026, 23:37:07 WAT = on-chain claimStart 1792017427
+ * (2026-10-14T22:37:07Z). claimEnd 1799793247 (2027-01-12T22:34:07Z).
  */
-export const COMMUNITY_OPENS_AT = Date.UTC(2026, 9, 16, 17, 2, 0);
+export const COMMUNITY_OPENS_AT = 1_792_017_427_000;
+export const CLAIM_ENDS_AT = 1_799_793_247_000;
 
 /** Distribution split (whole VENT tokens, display only). No team share. */
 export const DISTRIBUTION = {
@@ -110,37 +136,44 @@ export const DISTRIBUTION = {
 
 export const POOLS: readonly AirdropPool[] = [
   {
-    id: "community",
-    name: "Pool 1 · Community airdrop",
-    shortName: "the Community airdrop",
+    // One merged tree: each registered wallet has a single allocation that already combines
+    // its community share (1,200 VENT per Arbitrum tx) and NFT share (178,784 VENT per NFT).
+    id: "registrants-1200",
+    name: "VENT airdrop · Registered wallets",
+    shortName: "the VENT airdrop",
     description:
-      "3.5B VENT for waitlist wallets — 180 VENT per Arbitrum One transaction at the snapshot. Opens first.",
-    totalTokens: 3_500_000_000,
-    // Per-wallet amounts are computed off-chain and shipped in the proof files.
-    // The page only ever displays the amount from the proof file; it never computes one.
-    // Claim is FCFS off-site — do NOT mention FCFS in UI copy.
-    allocationSource: "180 VENT × Arbitrum One transactions at the snapshot",
-    eligibleNote: "180 VENT per Arbitrum transaction at the snapshot",
-    status: "upcoming",
-    statusLabel: "Claims open soon",
+      "One claim per registered wallet: 1,200 VENT per Arbitrum One transaction plus 178,784 VENT per Ventra NFT held, combined into a single amount.",
+    totalTokens: AIRDROP_TOTAL_VENT,
+    allocationSource:
+      "Registered wallets at block 514,875,489 · 1,200 VENT × Arbitrum txs + 178,784 VENT × Ventra NFTs",
+    eligibleNote: "Community (1,200 VENT per Arbitrum tx) + NFT (178,784 VENT per NFT), combined",
+    snapshotBlock: REGISTRATION_CUTOFF_BLOCK,
+    status: "open",
+    statusLabel: "Claims open",
     opensAt: COMMUNITY_OPENS_AT,
-    contract: null,
-    proofsPublished: false,
+    contract: VENT_AIRDROP_ADDRESS,
+    proofsPublished: true,
+    // Proofs are static files committed in public/proofs/registrants-1200/ (same origin).
+    // VITE_PROOFS_BASE_URL can override this to point at a CDN.
+    proofsBaseUrl: PROOFS_BASE_URL ?? "/proofs",
   },
   {
-    id: "nft",
-    name: "Pool 2 · Ventra NFT holders",
-    shortName: "the NFT holder pool",
+    // Top-up for the 123 registered wallets that had 0 in the main tree: 100,000 VENT each.
+    id: "zero-topup-100k",
+    name: "VENT airdrop · Registrant top-up",
+    shortName: "the registrant top-up",
     description:
-      "1.5B VENT for Ventra NFT holders from the final mint snapshot. Register now; claim opens with the community window.",
-    totalTokens: 1_500_000_000,
-    allocationSource: "Ventra NFT holder snapshot (final, mint complete)",
-    eligibleNote: "Eligible · amount shown when claim opens",
-    status: "upcoming",
-    statusLabel: "Claims open soon",
-    opensAt: COMMUNITY_OPENS_AT,
-    contract: null,
-    proofsPublished: false,
+      "100,000 VENT for each of the 123 registered wallets that had no allocation in the main airdrop.",
+    totalTokens: 12_300_000,
+    allocationSource: "Registered wallets with 0 allocation at block 514,875,489 · 100,000 VENT each",
+    eligibleNote: "Registrant top-up · 100,000 VENT",
+    snapshotBlock: REGISTRATION_CUTOFF_BLOCK,
+    status: "open",
+    statusLabel: "Claims open",
+    opensAt: 1_792_017_592_000, // on-chain claimStart 2026-10-14T22:39:52Z
+    contract: VENT_TOPUP_AIRDROP_ADDRESS,
+    proofsPublished: true,
+    proofsBaseUrl: PROOFS_BASE_URL ?? "/proofs",
   },
 ];
 

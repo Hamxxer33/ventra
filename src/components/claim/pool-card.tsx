@@ -11,6 +11,8 @@ import {
 } from "wagmi";
 import { Button } from "@/components/ui/button";
 import {
+  CLAIM_FEE_LABEL,
+  CLAIM_FEE_WEI,
   VENT,
   VENT_AIRDROP_ABI,
   formatCompactTokens,
@@ -89,10 +91,19 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
         functionName: "claimEnd",
         chainId: TARGET_CHAIN.id,
       },
+      {
+        address: contract,
+        abi: VENT_AIRDROP_ABI,
+        functionName: "claimFee",
+        chainId: TARGET_CHAIN.id,
+      },
     ],
     query: { enabled: Boolean(contract) },
   });
-  const [tokenRes, rootRes, startRes, endRes] = chainInfo.data ?? [];
+  const [tokenRes, rootRes, startRes, endRes, feeRes] = chainInfo.data ?? [];
+  // msg.value for claim(): on-chain claimFee() when read, else the known 0.0002 ETH.
+  const claimFeeWei =
+    typeof feeRes?.result === "bigint" ? (feeRes.result as bigint) : CLAIM_FEE_WEI;
   const onchainToken = tokenRes?.result as string | undefined;
   const onchainRoot = rootRes?.result as string | undefined;
   const claimStartMs = startRes?.result !== undefined ? Number(startRes.result) * 1000 : null;
@@ -156,6 +167,7 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
       abi: VENT_AIRDROP_ABI,
       functionName: "claim",
       args: [entry.amount, entry.proof],
+      value: claimFeeWei,
       chainId: TARGET_CHAIN.id,
     });
   }
@@ -247,7 +259,7 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
     button = <Button disabled>{proofRejected ? "Cannot claim" : "Checking…"}</Button>;
   else if (write.isPending) button = <Button disabled>Confirm in wallet…</Button>;
   else if (receipt.isLoading) button = <Button disabled>Claiming…</Button>;
-  else button = <Button onClick={onClaim}>Claim {formatVentExact(entry.amount)} VENT</Button>;
+  else button = <Button onClick={onClaim}>Claim {formatVentExact(entry.amount)} VENT · 0.0002 ETH fee</Button>;
 
   const showCountdown = pool.opensAt !== null && (now === null || now < pool.opensAt);
 
@@ -302,6 +314,10 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
           </div>
         ) : null}
         <div className="flex flex-col">
+          <dt className="font-display text-micro uppercase text-muted">Claim fee</dt>
+          <dd className="text-fg">0.0002 ETH per claim, plus gas</dd>
+        </div>
+        <div className="flex flex-col">
           <dt className="font-display text-micro uppercase text-muted">Claim contract</dt>
           <dd className="break-all text-fg">
             {pool.contract ? (
@@ -331,7 +347,11 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
           <p className="font-sans text-base text-danger">
             {isUserRejection(write.error)
               ? "Transaction rejected in wallet."
-              : "Claim failed. You may already have claimed, or need a little ETH for gas."}
+              : /AlreadyClaimed/.test(String(write.error))
+                ? "This wallet has already claimed."
+                : /InsufficientFee|insufficient funds/i.test(String(write.error))
+                  ? "Not enough ETH. You need 0.0002 ETH for the claim fee plus a little gas."
+                  : "Claim failed. You may already have claimed, or need 0.0002 ETH for the fee plus gas."}
           </p>
         ) : null}
         {write.data ? (
@@ -345,8 +365,8 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
           </a>
         ) : null}
         <p className="font-sans text-base text-muted">
-          When claims open, this is one transaction on {VENT.chainName}. Registration is a separate
-          step on this site. We never ask for seed phrases.
+          One transaction on {VENT.chainName}: {CLAIM_FEE_LABEL} (sent with the claim) plus gas.
+          Registration is closed. We never ask for seed phrases.
         </p>
         <SafetyLine />
       </div>
@@ -358,6 +378,7 @@ export function PoolCard({ pool }: { pool: AirdropPool }) {
         metaFailed={metaQuery.isError && !(metaQuery.error instanceof ProofDataError)}
         onRetryMeta={() => void metaQuery.refetch()}
         claimable={claimable}
+        claimFeeWei={claimFeeWei}
         safetyError={
           (metaQuery.error instanceof ProofDataError && metaQuery.error.message) ||
           contractMismatch ||

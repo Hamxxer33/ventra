@@ -2,22 +2,28 @@ import { ExternalLink, ShieldAlert } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { TelegramLogo } from "@/components/pixel-logo";
 import { ClaimProviders } from "@/components/claim/claim-providers";
-import { ClaimWizard } from "@/components/claim/claim-wizard";
+import { PoolCard } from "@/components/claim/pool-card";
 import { HeaderConnect } from "@/components/claim/header-connect";
 import { ClaimOpensBanner } from "@/components/claim/claim-opens-banner";
 import {
+  AIRDROP_RECIPIENTS,
+  AIRDROP_REGISTRANTS,
+  AIRDROP_TOTAL_VENT,
   CLAIM_DOMAIN,
-  COMMUNITY_OPENS_AT,
-  DISTRIBUTION,
+  CLAIM_ENDS_AT,
+  MOCK_POOL,
+  POOLS,
+  REGISTRATION_CUTOFF_BLOCK,
   VENT,
-  formatCompactTokens,
+  VENT_PER_ARB_TX,
+  VENT_PER_NFT,
   formatOpensAt,
 } from "@/lib/airdrop";
 import { OPENSEA_URL, TELEGRAM_URL, WEBSITE_URL } from "@/lib/drop";
 
 export function ClaimApp({ demo = false }: { demo?: boolean }) {
-  const total =
-    DISTRIBUTION.liquidity + DISTRIBUTION.community + DISTRIBUTION.nft;
+  const pools = demo ? [MOCK_POOL] : POOLS;
+  const fmt = (n: number) => n.toLocaleString("en-US");
 
   return (
     <ClaimProviders demo={demo}>
@@ -43,20 +49,13 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-2 font-sans text-sm text-fg">
               <span>
-                Supply{" "}
-                <strong className="font-semibold">{formatCompactTokens(total)}</strong>
+                Supply <strong className="font-semibold">100B</strong>
               </span>
               <span>
-                Community{" "}
-                <strong className="font-semibold">
-                  {formatCompactTokens(DISTRIBUTION.community)}
-                </strong>
+                Airdrop <strong className="font-semibold">{fmt(AIRDROP_TOTAL_VENT)}</strong>
               </span>
               <span>
-                NFT{" "}
-                <strong className="font-semibold">
-                  {formatCompactTokens(DISTRIBUTION.nft)}
-                </strong>
+                Wallets <strong className="font-semibold">{fmt(AIRDROP_RECIPIENTS)}</strong>
               </span>
             </div>
           </div>
@@ -70,20 +69,29 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
           {/* Hero */}
           <section className="flex flex-col gap-3 py-10 sm:py-14">
             <h1 className="max-w-2xl text-4xl font-semibold leading-[1.08] tracking-tight text-fg sm:text-5xl">
-              Register for your claim
+              Claim your VENT
             </h1>
             <p className="max-w-xl font-sans text-base leading-relaxed text-fg/80 sm:text-lg">
-              Check eligibility, see both allocations, then register on this site.
+              Connect the wallet you registered. Each registered wallet has one allocation that
+              combines {fmt(VENT_PER_ARB_TX)} VENT per Arbitrum One transaction and{" "}
+              {fmt(VENT_PER_NFT)} VENT per Ventra NFT. Registered wallets that had no allocation get
+              100,000 VENT from the top-up pool. Your wallet is checked against both pools below;
+              each claim costs a 0.0002 ETH fee plus gas.
             </p>
             <p className="max-w-xl font-sans text-base leading-relaxed text-fg/80 sm:text-lg">
-              NFT claim window announced separately.
+              Registration is closed (snapshot at block {fmt(REGISTRATION_CUTOFF_BLOCK)}). There
+              is no separate NFT claim.
             </p>
             <ClaimOpensBanner />
           </section>
 
           {/* Wizard = claim cards */}
           <div id="register" className="border-t border-border pt-8 pb-4">
-            <ClaimWizard demo={demo} />
+            <div className="flex flex-col gap-6">
+              {pools.map((p) => (
+                <PoolCard key={p.id} pool={p} />
+              ))}
+            </div>
           </div>
 
           {/* Resources */}
@@ -133,20 +141,30 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
                 </p>
                 <ul className="flex flex-col gap-3 font-sans text-sm text-fg">
                   <li className="flex justify-between border-b border-border pb-2">
-                    <span>Liquidity</span>
-                    <strong>{formatCompactTokens(DISTRIBUTION.liquidity)}</strong>
+                    <span>Airdrop total</span>
+                    <strong>{fmt(AIRDROP_TOTAL_VENT)}</strong>
                   </li>
                   <li className="flex justify-between border-b border-border pb-2">
-                    <span>Community</span>
-                    <strong>{formatCompactTokens(DISTRIBUTION.community)}</strong>
+                    <span>Per Arbitrum tx</span>
+                    <strong>{fmt(VENT_PER_ARB_TX)}</strong>
+                  </li>
+                  <li className="flex justify-between border-b border-border pb-2">
+                    <span>Per Ventra NFT</span>
+                    <strong>{fmt(VENT_PER_NFT)}</strong>
                   </li>
                   <li className="flex justify-between">
-                    <span>NFT holders</span>
-                    <strong>{formatCompactTokens(DISTRIBUTION.nft)}</strong>
+                    <span>Wallets with allocation</span>
+                    <strong>
+                      {fmt(AIRDROP_RECIPIENTS)} / {fmt(AIRDROP_REGISTRANTS)}
+                    </strong>
                   </li>
                 </ul>
-                <p className="mt-4 font-sans text-xs text-muted">
-                  No team share · {VENT.chainName}
+                <p className="mt-4 break-all font-sans text-xs text-muted">
+                  Token{" "}
+                  <a href={VENT.explorerTokenUrl} target="_blank" rel="noreferrer" className="underline">
+                    {VENT.address}
+                  </a>{" "}
+                  · {VENT.chainName}
                 </p>
               </div>
             </div>
@@ -162,7 +180,7 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
                 </h2>
                 <ul className="flex list-disc flex-col gap-2 pl-5 font-sans text-sm leading-relaxed text-muted">
                   <li>
-                    Only register / claim at <strong className="text-fg">{CLAIM_DOMAIN}</strong>.
+                    Only claim at <strong className="text-fg">{CLAIM_DOMAIN}</strong>.
                     Links in DMs or replies are scams.
                   </li>
                   <li>Never share your seed phrase or private key.</li>
@@ -227,7 +245,7 @@ export function ClaimApp({ demo = false }: { demo?: boolean }) {
               </Link>
             </nav>
             <p className="font-sans text-xs text-muted">
-              Claims {formatOpensAt(COMMUNITY_OPENS_AT)} · {CLAIM_DOMAIN}
+              Claims open until {formatOpensAt(CLAIM_ENDS_AT)} · {CLAIM_DOMAIN}
             </p>
           </footer>
         </div>

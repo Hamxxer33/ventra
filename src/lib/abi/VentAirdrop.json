@@ -26,249 +26,116 @@
         "name": "owner_",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "claimFee_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "feeRecipient_",
+        "type": "address",
+        "internalType": "address payable"
       }
     ],
     "stateMutability": "nonpayable"
   },
   {
-    "type": "function",
-    "name": "canClaim",
+    "name": "AlreadyClaimed",
+    "type": "error",
+    "inputs": []
+  },
+  {
+    "name": "ClaimAlreadyStarted",
+    "type": "error",
+    "inputs": []
+  },
+  {
+    "name": "ClaimEnded",
+    "type": "error",
+    "inputs": []
+  },
+  {
+    "name": "ClaimNotEnded",
+    "type": "error",
+    "inputs": []
+  },
+  {
+    "name": "ClaimNotStarted",
+    "type": "error",
+    "inputs": []
+  },
+  {
+    "name": "FeeTransferFailed",
+    "type": "error",
+    "inputs": []
+  },
+  {
+    "name": "InsufficientFee",
+    "type": "error",
+    "inputs": []
+  },
+  {
+    "name": "InvalidProof",
+    "type": "error",
+    "inputs": []
+  },
+  {
+    "name": "InvalidWindow",
+    "type": "error",
+    "inputs": []
+  },
+  {
+    "name": "OwnableInvalidOwner",
+    "type": "error",
     "inputs": [
       {
-        "name": "account",
+        "name": "owner",
         "type": "address",
         "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "proof",
-        "type": "bytes32[]",
-        "internalType": "bytes32[]"
       }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
+    ]
   },
   {
-    "type": "function",
-    "name": "claim",
-    "inputs": [
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "proof",
-        "type": "bytes32[]",
-        "internalType": "bytes32[]"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "claimEnd",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "claimFor",
-    "inputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "proof",
-        "type": "bytes32[]",
-        "internalType": "bytes32[]"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "claimStart",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "emergencyWithdraw",
-    "inputs": [
-      {
-        "name": "to",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "isClaimed",
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error",
     "inputs": [
       {
         "name": "account",
         "type": "address",
         "internalType": "address"
       }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
+    ]
   },
   {
-    "type": "function",
-    "name": "merkleRoot",
-    "inputs": [],
-    "outputs": [
+    "name": "SafeERC20FailedOperation",
+    "type": "error",
+    "inputs": [
       {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "owner",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
+        "name": "token",
         "type": "address",
         "internalType": "address"
       }
-    ],
-    "stateMutability": "view"
+    ]
   },
   {
-    "type": "function",
-    "name": "renounceOwnership",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
+    "name": "ZeroAddress",
+    "type": "error",
+    "inputs": []
   },
   {
-    "type": "function",
-    "name": "setClaimWindow",
-    "inputs": [
-      {
-        "name": "newStart",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "newEnd",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
+    "name": "ZeroAmount",
+    "type": "error",
+    "inputs": []
   },
   {
-    "type": "function",
-    "name": "setMerkleRoot",
-    "inputs": [
-      {
-        "name": "newRoot",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
+    "name": "ZeroRoot",
+    "type": "error",
+    "inputs": []
   },
   {
-    "type": "function",
-    "name": "token",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "transferOwnership",
-    "inputs": [
-      {
-        "name": "newOwner",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "withdrawUnclaimed",
-    "inputs": [
-      {
-        "name": "to",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "event",
     "name": "ClaimWindowUpdated",
+    "type": "event",
     "inputs": [
       {
         "name": "claimStart",
@@ -286,8 +153,8 @@
     "anonymous": false
   },
   {
-    "type": "event",
     "name": "Claimed",
+    "type": "event",
     "inputs": [
       {
         "name": "account",
@@ -305,8 +172,8 @@
     "anonymous": false
   },
   {
-    "type": "event",
     "name": "ClaimedFor",
+    "type": "event",
     "inputs": [
       {
         "name": "caller",
@@ -330,8 +197,8 @@
     "anonymous": false
   },
   {
-    "type": "event",
     "name": "EmergencyWithdrawn",
+    "type": "event",
     "inputs": [
       {
         "name": "to",
@@ -349,8 +216,8 @@
     "anonymous": false
   },
   {
-    "type": "event",
     "name": "MerkleRootUpdated",
+    "type": "event",
     "inputs": [
       {
         "name": "oldRoot",
@@ -368,8 +235,8 @@
     "anonymous": false
   },
   {
-    "type": "event",
     "name": "OwnershipTransferred",
+    "type": "event",
     "inputs": [
       {
         "name": "previousOwner",
@@ -387,8 +254,8 @@
     "anonymous": false
   },
   {
-    "type": "event",
     "name": "UnclaimedWithdrawn",
+    "type": "event",
     "inputs": [
       {
         "name": "to",
@@ -406,86 +273,265 @@
     "anonymous": false
   },
   {
-    "type": "error",
-    "name": "AlreadyClaimed",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "ClaimAlreadyStarted",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "ClaimEnded",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "ClaimNotEnded",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "ClaimNotStarted",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidProof",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidWindow",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "OwnableInvalidOwner",
+    "name": "canClaim",
+    "type": "function",
     "inputs": [
       {
-        "name": "owner",
+        "name": "account",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "proof",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
       }
-    ]
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "OwnableUnauthorizedAccount",
+    "name": "claim",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "proof",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "name": "claimEnd",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "claimFee",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "claimFor",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "proof",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "name": "claimStart",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "emergencyWithdraw",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "name": "feeRecipient",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address payable"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "isClaimed",
+    "type": "function",
     "inputs": [
       {
         "name": "account",
         "type": "address",
         "internalType": "address"
       }
-    ]
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "SafeERC20FailedOperation",
-    "inputs": [
+    "name": "merkleRoot",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
       {
-        "name": "token",
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "owner",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
         "type": "address",
         "internalType": "address"
       }
-    ]
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "ZeroAddress",
-    "inputs": []
+    "name": "renounceOwnership",
+    "type": "function",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "ZeroAmount",
-    "inputs": []
+    "name": "setClaimWindow",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "newStart",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "newEnd",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "ZeroRoot",
-    "inputs": []
+    "name": "setMerkleRoot",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "newRoot",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "name": "token",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IERC20"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "transferOwnership",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "name": "withdrawUnclaimed",
+    "type": "function",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   }
 ]
