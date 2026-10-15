@@ -1,0 +1,13 @@
+{
+  "pool": "nft549-topup",
+  "root": "0xb9b768da121528e18446ee7c5072b3771360cc16ecd5007bccef58717f71de48",
+  "token": "0x8199567313b0667CD7aED073dE8002c69F0cD2Dd",
+  "decimals": 18,
+  "total": "253184000000000000000000",
+  "totalVent": "253184",
+  "count": 1,
+  "prefixLen": 2,
+  "shards": 1,
+  "shardPath": "<xx>.json, xx = lowercase address.slice(2, 4)",
+  "leafEncoding": "keccak256(bytes.concat(keccak256(abi.encode(address account, uint256 amount))))"
+}
