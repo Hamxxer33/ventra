@@ -1,0 +1,13 @@
+{
+  "pool": "enrico-topup",
+  "root": "0x372f9b3902592ad371843ce687410c48ec0dbdf0cfae7e9217c1317e78db043a",
+  "token": "0x8199567313b0667CD7aED073dE8002c69F0cD2Dd",
+  "decimals": 18,
+  "total": "1160400000000000000000000",
+  "totalVent": "1160400",
+  "count": 1,
+  "prefixLen": 2,
+  "shards": 1,
+  "shardPath": "<xx>.json, xx = lowercase address.slice(2, 4)",
+  "leafEncoding": "keccak256(bytes.concat(keccak256(abi.encode(address account, uint256 amount))))"
+}

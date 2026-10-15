@@ -57,6 +57,9 @@ export const VENT_NFT549_AIRDROP_ADDRESS = "0x090d4c4e3a90298b7311b024450252ebb1
 /** Single-wallet VentAirdrop for appeal 0x7f4c…e61b (2 NFTs + 148 tx, root 0x76fc…a438). */
 export const VENT_APPEAL_7F4C_AIRDROP_ADDRESS = "0x029d9992593efe68920e7abbb79b4ae3ff190b0c" as Address;
 
+/** Single-wallet VentAirdrop for appeal 0x32ce…5b3e (967 tx, root 0x372f…043a). */
+export const VENT_APPEAL_32CE_AIRDROP_ADDRESS = "0xa84c81054b1ed89cbb5aca8a2158d1aecda6d76e" as Address;
+
 /**
  * Flat claim fee in wei (immutable `claimFee` on the contract = 0.0002 ETH), sent as msg.value
  * with claim()/claimFor(). The page reads claimFee() on-chain and uses that when available.
@@ -212,6 +215,23 @@ export const POOLS: readonly AirdropPool[] = [
     statusLabel: "Claims open",
     opensAt: 1792049715_000, // on-chain claimStart
     contract: VENT_APPEAL_7F4C_AIRDROP_ADDRESS,
+    proofsPublished: true,
+    proofsBaseUrl: PROOFS_BASE_URL ?? "/proofs",
+  },
+  {
+    // Single-wallet top-up: appeal 0x32ce…5b3e (unregistered): 967 tx x 1,200.
+    id: "enrico-topup",
+    name: "VENT airdrop · community top-up",
+    shortName: "the community top-up",
+    description: "VENT allocation for a community wallet.",
+    totalTokens: 1_160_400,
+    allocationSource: "1,200 VENT x Arbitrum txs + 178,784 VENT x Ventra NFTs",
+    eligibleNote: "Community (1,200 VENT per Arbitrum tx) + NFT (178,784 VENT per NFT), combined",
+    snapshotBlock: REGISTRATION_CUTOFF_BLOCK,
+    status: "open",
+    statusLabel: "Claims open",
+    opensAt: 1792076420_000, // on-chain claimStart
+    contract: VENT_APPEAL_32CE_AIRDROP_ADDRESS,
     proofsPublished: true,
     proofsBaseUrl: PROOFS_BASE_URL ?? "/proofs",
   },
