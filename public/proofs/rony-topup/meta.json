@@ -1,0 +1,13 @@
+{
+  "pool": "rony-topup",
+  "root": "0x76fc1c8008c2e50b85f2559115205cfc6acc6b3b9dcfce943b59ddaf3283a438",
+  "token": "0x8199567313b0667CD7aED073dE8002c69F0cD2Dd",
+  "decimals": 18,
+  "total": "535168000000000000000000",
+  "totalVent": "535168",
+  "count": 1,
+  "prefixLen": 2,
+  "shards": 1,
+  "shardPath": "<xx>.json, xx = lowercase address.slice(2, 4)",
+  "leafEncoding": "keccak256(bytes.concat(keccak256(abi.encode(address account, uint256 amount))))"
+}
